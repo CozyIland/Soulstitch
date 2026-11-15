@@ -51,13 +51,13 @@ cv.addEventListener('touchstart',e=>{e.preventDefault();touchMode=true;initAudio
       if(q.x<W/2){if(!joy)joy={id:t.identifier,ox:q.x,oy:q.y,dx:0,up:false}}
       else if(Math.hypot(q.x-DB.x,q.y-DB.y)<DB.r+8)pressed.add('ShiftLeft');
       else if(Math.hypot(q.x-JB.x,q.y-JB.y)<JB.r+8){jumpTouch=t.identifier;jumpKey()}
-      else if(!aimT)aimT={id:t.identifier,ox:q.x,oy:q.y,dx:0,dy:0,a:p&&p.mf<0?Math.PI:0};
+      else if(!aimT)aimT={id:t.identifier,x:q.x,y:q.y};
     }}},{passive:false});
 cv.addEventListener('touchmove',e=>{e.preventDefault();
   for(const t of e.changedTouches){const q=tpos(t);
     if(joy&&t.identifier===joy.id){joy.dx=clamp((q.x-joy.ox)/26,-1,1);const dy=(q.y-joy.oy)/26;
       if(!joy.up&&dy<-.7)joy.up=true;else if(joy.up&&dy>-.35)joy.up=false;jumpKey()}
-    if(aimT&&t.identifier===aimT.id){aimT.dx=q.x-aimT.ox;aimT.dy=q.y-aimT.oy;if(Math.hypot(aimT.dx,aimT.dy)>8)aimT.a=Math.atan2(aimT.dy,aimT.dx)}
+    if(aimT&&t.identifier===aimT.id){aimT.x=q.x;aimT.y=q.y}
   }},{passive:false});
 const tend=e=>{for(const t of e.changedTouches){if(joy&&t.identifier===joy.id)joy=null;if(aimT&&t.identifier===aimT.id)aimT=null;if(t.identifier===jumpTouch)jumpTouch=null}jumpKey()};
 cv.addEventListener('touchend',tend);cv.addEventListener('touchcancel',tend);
@@ -363,8 +363,8 @@ function updPlayer(dt){
     if(p.y>=GY){p.y=GY;p.vy=0;if(!p.gnd){p.gnd=true;for(let i=0;i<4;i++)fx.push({x:p.x+rnd(-6,6),y:GY,vx:rnd(-40,40),vy:rnd(-30,0),life:.25,col:'#8a6a50',r:2})}}
   }
   p.x=clamp(p.x,AL+8,AR-8);
-  // Touch: Zielen nur mit dem rechten Daumen, sonst schaut die Figur in Laufrichtung
-  const a=touchMode?(aimT?aimT.a:(p.mf<0?Math.PI:0)):mouse.down?Math.atan2(mouse.y-(p.y-20),mouse.x-p.x):Math.atan2(b.y-(p.y-20),b.x-p.x);
+  // Touch: geschossen wird genau auf die Stelle, die rechts angetippt wird; sonst Blick in Laufrichtung
+  const a=touchMode?(aimT?Math.atan2(aimT.y-(p.y-20),aimT.x-p.x):(p.mf<0?Math.PI:0)):mouse.down?Math.atan2(mouse.y-(p.y-20),mouse.x-p.x):Math.atan2(b.y-(p.y-20),b.x-p.x);
   p.aim=a;p.f=Math.cos(a)>=0?1:-1;
   if((mouse.down||(touchMode&&aimT)||K('KeyJ','KeyX'))&&p.cd<=0&&phase==='play'){
     for(const o of st.twin?[-.1,.1]:[0])pb.push({x:p.x+Math.cos(a)*10,y:p.y-21+Math.sin(a)*10,vx:Math.cos(a+o)*st.bs,vy:Math.sin(a+o)*st.bs,life:st.life,dmg:st.dmg});
@@ -635,8 +635,8 @@ function drawFight(){
   if(touchMode&&phase!=='dead'){
     for(const[q,l]of[[JB,'SPRUNG'],[DB,'DASH']]){ctx.globalAlpha=.4;circ(ctx,q.x,q.y,q.r,'#fff');ctx.globalAlpha=1;ctx.strokeStyle='rgba(255,255,255,.8)';ctx.lineWidth=2;ctx.stroke();txt(l,q.x,q.y-6,'#fff','center',10,true)}
     if(joy){ctx.globalAlpha=.3;circ(ctx,joy.ox,joy.oy,30,'#fff');ctx.globalAlpha=.7;circ(ctx,joy.ox+joy.dx*26,joy.oy+(joy.up?-22:0),14,joy.up?'#ffd040':'#5ff');ctx.globalAlpha=1}
-    if(aimT){ctx.globalAlpha=.3;circ(ctx,aimT.ox,aimT.oy,30,'#fff');ctx.globalAlpha=.75;circ(ctx,aimT.ox+Math.cos(aimT.a)*22,aimT.oy+Math.sin(aimT.a)*22,13,'#ff6050');ctx.globalAlpha=1}
-    else txt('rechts ziehen: zielen + schießen',W-150,248,'rgba(255,255,255,.55)','center',11,true);
+    if(aimT){ctx.strokeStyle='rgba(255,96,80,.9)';ctx.lineWidth=2;ctx.beginPath();ctx.arc(aimT.x,aimT.y,10,0,TAU);ctx.moveTo(aimT.x-15,aimT.y);ctx.lineTo(aimT.x-5,aimT.y);ctx.moveTo(aimT.x+5,aimT.y);ctx.lineTo(aimT.x+15,aimT.y);ctx.moveTo(aimT.x,aimT.y-15);ctx.lineTo(aimT.x,aimT.y-5);ctx.moveTo(aimT.x,aimT.y+5);ctx.lineTo(aimT.x,aimT.y+15);ctx.stroke()}
+    else txt('rechts tippen: dorthin schießen',W-150,248,'rgba(255,255,255,.55)','center',11,true);
   }
   const band=c=>{ctx.fillStyle=c;ctx.fillRect(0,138,W,74)};
   if(phase==='intro'){band('rgba(0,0,0,.62)');txt('BOSS '+b.n,W/2,146,d[3],'center',14,true);txt(d[0],W/2,166,'#fff','center',30,true,true)}
@@ -682,7 +682,7 @@ function drawTitle(){
     txt('Boss Rush im Knochenkolosseum',W/2,138,'#e0d6bc','center',16,false,true);
     drawBody(W/2,236,2.2,save.lo,{run:0});
     if((time*2|0)%2)txt(touchMode?'Tippen zum Starten':'Enter drücken',W/2,258,'#fff','center',15,true);
-    txt(touchMode?'Links ziehen: laufen, nach oben: springen · Rechts ziehen: zielen und schießen · Knopf: Dash':'A/D: laufen · W oder Leertaste: springen · Shift oder K: ausweichen · Maus oder J: schießen',W/2,300,'#b0a090','center',12);
+    txt(touchMode?'Links ziehen: laufen, nach oben: springen · Rechts tippen: dorthin schießen · Knopf: Dash':'A/D: laufen · W oder Leertaste: springen · Shift oder K: ausweichen · Maus oder J: schießen',W/2,300,'#b0a090','center',12);
     if(save.best)txt('Rekord: '+save.best+' Bosse',W/2,322,'#ffd040','center',13,true);
   }else{
     INTRO[introLine].forEach((l,i)=>txt(l,W/2,124+i*28,'#f0e8d0','center',19,false,true));
