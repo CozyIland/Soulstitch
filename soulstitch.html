@@ -126,50 +126,85 @@ function limb(x1,y1,x2,y2,w,col){
 }
 
 // ---------- Leichenteile ----------
-const SLOTS=['kopf','torso','arme','beine','herz'];
-const SLOTN={kopf:'KOPF',torso:'RUMPF',arme:'ARME',beine:'BEINE',herz:'HERZ'};
+// Jedes Teil gibt einen Bonus. Arme und Beine wirken pro Stück: zwei gleiche verdoppeln den Bonus.
+// Bezahlt wird mit Knochen; gekaufte Teile und Knochen bleiben auch nach dem Tod erhalten.
 const PARTS={
  kopf:[
-  {n:'Namenloser Schädel',d:'Ein gewöhnlicher Seelenschuss.',c:0,u:0,col:'#ddd4ba'},
-  {n:'Auge des Wahrsagers',d:'Schüsse fliegen schneller und weiter.',c:1,u:4,col:'#9ab8e0',bs:1.5,rng:1.5},
-  {n:'Doppelschädel',d:'Zwei Schüsse auf einmal, leicht gestreut.',c:2,u:12,col:'#d0a4b6',twin:1}],
- torso:[
-  {n:'Dürrer Rumpf',d:'1 LP. Leicht und flink.',c:0,u:0,col:'#b8a888',hp:1,sp:1},
-  {n:'Soldatenbrust',d:'2 LP, aber träge.',c:2,u:1,col:'#7a8e6a',hp:2,sp:.78},
-  {n:'Kolossrumpf',d:'3 LP, aber sehr langsam.',c:4,u:8,col:'#9a5e4c',hp:3,sp:.58}],
- arme:[
-  {n:'Knochenarme',d:'Solide Feuerrate.',c:0,u:0,col:'#ddd4ba',cd:.5},
-  {n:'Schnitterklauen',d:'Sehr schnelle Schüsse, kurze Reichweite.',c:1,u:2,col:'#c85454',cd:.28,rng:.45},
-  {n:'Kanonenarm',d:'2 Schaden pro Treffer, lädt langsam.',c:2,u:10,col:'#68728a',cd:1.1,dmg:2}],
- beine:[
-  {n:'Läuferbeine',d:'Normales Ausweichen.',c:0,u:0,col:'#a89878'},
-  {n:'Sprungsehnen',d:'Ausweichen lädt doppelt so schnell.',c:1,u:3,col:'#70b070',dcd:.5},
-  {n:'Stelzen',d:'+20% Tempo, Ausweichen lädt langsamer.',c:1,u:6,col:'#c09c58',sp:1.2,dcd:1.6}],
+  {id:'k0',n:'Namenloser Schädel',d:'Kein Bonus.',p:0,col:'#ddd4ba'},
+  {id:'k1',n:'Krähenschädel',d:'Schüsse lenken leicht zum Boss.',p:25,col:'#6a6a88',home:1},
+  {id:'k2',n:'Hornschädel',d:'Dash durch den Boss: 3 Schaden.',p:35,col:'#c8a070',horn:1},
+  {id:'k3',n:'Doppelschädel',d:'Zwei Schüsse auf einmal.',p:60,col:'#d0a4b6',twin:1}],
+ brust:[
+  {id:'b0',n:'Dürrer Rumpf',d:'Kein Bonus.',p:0,col:'#b8a888'},
+  {id:'b1',n:'Panzerrippen',d:'Nach Treffern 0,8 s länger geschützt.',p:20,col:'#8a909c',inv:.8},
+  {id:'b2',n:'Soldatenbrust',d:'+1 Herz, −10 % Tempo.',p:30,col:'#7a8e6a',hp:1,sp:-.1},
+  {id:'b3',n:'Kolossrumpf',d:'+2 Herzen, −25 % Tempo.',p:55,col:'#9a5e4c',hp:2,sp:-.25}],
  herz:[
-  {n:'Stilles Herz',d:'Körperkraft 3.',c:0,u:0,col:'#b03838',cap:3},
-  {n:'Gestärktes Herz',d:'Von einer Seele gestärkt. Körperkraft 5.',c:0,u:5,col:'#ff4868',cap:5},
-  {n:'Götterherz',d:'Schlägt noch immer. Körperkraft 7.',c:0,u:15,col:'#ffd040',cap:7}]
+  {id:'h0',n:'Stilles Herz',d:'Kein Bonus.',p:0,col:'#b03838'},
+  {id:'h1',n:'Gestärktes Herz',d:'+1 Herz.',p:30,col:'#ff4868',hp:1},
+  {id:'h2',n:'Rasendes Herz',d:'Bei 1 Herz: +40 % Feuerrate, Tempo.',p:35,col:'#ff8a30',rage:1},
+  {id:'h3',n:'Seelenherz',d:'Jeder 8. Treffer heilt 1 Herz.',p:50,col:'#40e0ff',leech:8}],
+ arm:[
+  {id:'a0',n:'Knochenarm',d:'Kein Bonus.',p:0,col:'#ddd4ba'},
+  {id:'a1',n:'Speerarm',d:'+30 % Reichweite und Schusstempo.',p:15,col:'#c8b48c',bs:.3},
+  {id:'a2',n:'Schnitterklaue',d:'+25 % Feuerrate, −20 % Reichweite.',p:15,col:'#c85454',fr:.25,life:-.2},
+  {id:'a3',n:'Kanonenarm',d:'+50 % Schaden, −15 % Feuerrate.',p:25,col:'#68728a',dmg:.5,fr:-.15}],
+ bein:[
+  {id:'l0',n:'Läuferbein',d:'Kein Bonus.',p:0,col:'#a89878'},
+  {id:'l1',n:'Stelze',d:'+12 % Lauftempo.',p:15,col:'#c09c58',sp:.12},
+  {id:'l2',n:'Sprungsehne',d:'Dash lädt 30 % schneller.',p:15,col:'#70b070',dcd:.3},
+  {id:'l3',n:'Froschbein',d:'+12 % Sprunghöhe. Zwei: Doppelsprung.',p:25,col:'#5a9a5a',jmp:.12}]
 };
-let save={best:0,lo:{kopf:0,torso:0,arme:0,beine:0,herz:0}};
-try{const s=JSON.parse(localStorage.getItem('soulstitch'));if(s&&s.lo){save.best=s.best|0;for(const k of SLOTS)save.lo[k]=(s.lo[k]|0)%3}}catch(e){}
-function persist(){try{localStorage.setItem('soulstitch',JSON.stringify(save))}catch(e){}}
-const part=k=>PARTS[k][save.lo[k]];
+const PART={};for(const t in PARTS)for(const q of PARTS[t]){q.typ=t;PART[q.id]=q}
+const SLOTS=[{k:'kopf',n:'Kopf',t:'kopf'},{k:'brust',n:'Brust',t:'brust'},{k:'herz',n:'Herz',t:'herz'},
+ {k:'armL',n:'Linker Arm',t:'arm'},{k:'armR',n:'Rechter Arm',t:'arm'},{k:'beinL',n:'Linkes Bein',t:'bein'},{k:'beinR',n:'Rechtes Bein',t:'bein'}];
+const maxOwn=q=>q.typ==='arm'||q.typ==='bein'?2:1;
+const owned=id=>PART[id].p===0?99:(save.own[id]|0);
+// darf Teil q in Platz sl? (genug Stück, die nicht schon in einem anderen Platz stecken)
+const canEquip=(sl,q)=>owned(q.id)>SLOTS.filter(s=>s.k!==sl.k&&save.eq[s.k]===q.id).length;
+let save={best:0,bones:0,run:1,own:{},eq:{kopf:'k0',brust:'b0',herz:'h0',armL:'a0',armR:'a0',beinL:'l0',beinR:'l0'}};
+try{
+  const s=JSON.parse(localStorage.getItem('soulstitch2'));
+  if(s){save.best=s.best|0;save.bones=Math.max(0,s.bones|0);save.run=clamp(s.run|0,1,30);
+    for(const id in PART)if(s.own&&s.own[id])save.own[id]=clamp(s.own[id]|0,0,maxOwn(PART[id]));
+    for(const sl of SLOTS){const id=s.eq&&s.eq[sl.k];if(PART[id]&&PART[id].typ===sl.t)save.eq[sl.k]=id}
+    for(const sl of SLOTS)if(!canEquip(sl,PART[save.eq[sl.k]]))save.eq[sl.k]=PARTS[sl.t][0].id}
+  else{const o=JSON.parse(localStorage.getItem('soulstitch'));if(o)save.best=o.best|0}
+}catch(e){}
+function persist(){try{localStorage.setItem('soulstitch2',JSON.stringify(save))}catch(e){}}
 function stats(){
-  const k=part('kopf'),t=part('torso'),a=part('arme'),b=part('beine'),h=part('herz');
-  return{hp:t.hp,speed:150*t.sp*(b.sp||1),cd:a.cd,dmg:a.dmg||1,life:.85*(k.rng||1)*(a.rng||1),
-    bs:420*(k.bs||1),twin:!!k.twin,dcd:.9*(b.dcd||1),cap:h.cap,cost:k.c+t.c+a.c+b.c};
+  const E=SLOTS.map(sl=>PART[save.eq[sl.k]]),sum=f=>E.reduce((a,q)=>a+(q[f]||0),0),has=f=>E.some(q=>q[f]);
+  return{hp:1+sum('hp'),speed:150*Math.max(.4,1+sum('sp')),fr:Math.max(.3,1+sum('fr')),dmg:1+sum('dmg'),
+    bs:420*(1+sum('bs')),life:.85*(1+sum('life')),dcd:.9*Math.max(.3,1-sum('dcd')),jmp:1+sum('jmp'),
+    dbl:save.eq.beinL==='l3'&&save.eq.beinR==='l3',twin:has('twin'),home:has('home'),horn:has('horn'),
+    inv:sum('inv'),rage:has('rage'),leech:sum('leech')};
 }
 
 // ---------- Spielfigur (Füße bei x,y) ----------
-function drawBody(x,y,s,L,o={}){
-  const k=PARTS.kopf[L.kopf],t=PARTS.torso[L.torso],a=PARTS.arme[L.arme],be=PARTS.beine[L.beine],h=PARTS.herz[L.herz];
+// hinterer Arm/hinteres Bein = links, vorderer (zielender) Arm/vorderes Bein = rechts
+const LEG={l0:[12,3.4],l1:[18,2.4],l2:[12,3.4],l3:[13,4.2]},TW={b0:8,b1:10,b2:11,b3:16};
+function drawBody(x,y,s,eq,o={}){
+  const k=PART[eq.kopf],t=PART[eq.brust],h=PART[eq.herz],aB=PART[eq.armL],aF=PART[eq.armR],lB=PART[eq.beinL],lF=PART[eq.beinR];
   const f=o.f||1,ph=o.run||0,fl=o.flash,C=c=>fl?'#fff':c;
-  const leg=L.beine===2?18:12,lw=L.beine===2?2.4:3.4,hip=-leg,tw=[8,11,16][L.torso],th=13,sh=hip-th+3,hy=hip-th-6;
-  const aw=L.arme===2?4.6:2.6,lx=o.aim===undefined?.45:Math.cos(o.aim)*f,ly=o.aim===undefined?.9:Math.sin(o.aim);
+  const leg=Math.max(LEG[lB.id][0],LEG[lF.id][0]),hip=-leg,tw=TW[t.id],th=13,sh=hip-th+3,hy=hip-th-6;
+  const lx=o.aim===undefined?.45:Math.cos(o.aim)*f,ly=o.aim===undefined?.9:Math.sin(o.aim);
   ctx.save();ctx.translate(x,y);ctx.scale(s*f,s);ctx.lineJoin='round';
-  limb(-tw/2+1,sh,-tw/2-1-Math.sin(ph)*4,sh+9,aw,C(a.col));
-  if(o.air){limb(-2,hip,-5,hip+leg*.62,lw,C(be.col));limb(2,hip,5,hip+leg*.8,lw,C(be.col))}
-  else{const sA=Math.sin(ph)*5,cA=Math.cos(ph);limb(-2,hip,-2+sA,-1-Math.max(0,cA)*3,lw,C(be.col));limb(2,hip,2-sA,-1-Math.max(0,-cA)*3,lw,C(be.col))}
+  const arm=(q,x0,y0,dx,dy)=>{
+    const w=q.id==='a3'?4.6:2.6,len=q.id==='a1'?12:10,x1=x0+dx*len,y1=y0+dy*len;
+    limb(x0,y0,x1,y1,w,C(q.col));
+    if(q.id==='a3')limb(x1,y1,x1+dx*3.5,y1+dy*3.5,w+1.6,C('#3a4256'));
+    if(q.id==='a1')poly(ctx,[x1+dx*7,y1+dy*7,x1-dy*2.4,y1+dx*2.4,x1+dy*2.4,y1-dx*2.4],C('#efe4c8'),OUT,.8);
+    if(q.id==='a2'&&!fl){ctx.strokeStyle='#f6e8d8';ctx.lineWidth=1;ctx.beginPath();
+      for(const d of[-.55,0,.55]){const c=Math.cos(d),sn=Math.sin(d);ctx.moveTo(x1,y1);ctx.lineTo(x1+(dx*c-dy*sn)*5,y1+(dx*sn+dy*c)*5)}ctx.stroke()}
+  };
+  const legD=(q,x0,x1,y1)=>{
+    limb(x0,hip,x1,y1,LEG[q.id][1],C(q.col));
+    if(q.id==='l3')poly(ctx,[x1-1.5,y1+1.2,x1+5.5,y1+1.2,x1+3,y1-1.5],C(q.col),OUT,.8);
+    if(q.id==='l2'&&!fl){ctx.strokeStyle='#d8f0c0';ctx.lineWidth=.8;ctx.beginPath();ctx.moveTo(x0,hip+2);ctx.lineTo((x0+x1)/2,(hip+y1)/2);ctx.stroke()}
+  };
+  {const dx=-.25-Math.sin(ph)*.4,dy=.95,m=Math.hypot(dx,dy);arm(aB,-tw/2+1,sh,dx/m,dy/m)}
+  if(o.air){legD(lB,-2,-5,hip+leg*.62);legD(lF,2,5,hip+leg*.8)}
+  else{const sA=Math.sin(ph)*5,cA=Math.cos(ph);legD(lB,-2,-2+sA,-1-Math.max(0,cA)*3);legD(lF,2,2-sA,-1-Math.max(0,-cA)*3)}
   // Rumpf
   rr(ctx,-tw/2,hip-th,tw,th+2,3);ctx.fillStyle=C(t.col);ctx.fill();
   if(!fl){const g=ctx.createLinearGradient(-tw/2,0,tw/2,0);g.addColorStop(0,'rgba(0,0,0,.3)');g.addColorStop(.6,'rgba(255,255,255,.12)');g.addColorStop(1,'rgba(0,0,0,.1)');ctx.fillStyle=g;ctx.fill()}
@@ -177,6 +212,7 @@ function drawBody(x,y,s,L,o={}){
   if(!fl){
     ctx.beginPath();for(let i=0;i<tw-3;i+=3){ctx.moveTo(-tw/2+2+i,hip-2.5);ctx.lineTo(-tw/2+3.2+i,hip-4.5)}
     ctx.moveTo(-tw/2+1,hip-th+1.5);ctx.lineTo(-tw/2+3,hip-th+3.5);ctx.moveTo(-tw/2+3,hip-th+1.5);ctx.lineTo(-tw/2+1,hip-th+3.5);
+    if(t.id==='b1')for(let i=0;i<3;i++){ctx.moveTo(-tw/2+1,hip-th+5+i*3);ctx.lineTo(tw/2-1,hip-th+5+i*3)}
     ctx.lineWidth=.7;ctx.stroke();
     ctx.shadowColor=h.col;ctx.shadowBlur=6;circ(ctx,1,hip-th+6,1.9,h.col);ctx.shadowBlur=0;
   }
@@ -185,16 +221,14 @@ function drawBody(x,y,s,L,o={}){
     if(!fl){const g=ctx.createRadialGradient(cx+r*.3,cy-r*.4,r*.2,cx,cy,r);g.addColorStop(0,'rgba(255,255,255,.3)');g.addColorStop(1,'rgba(0,0,0,.28)');ctx.fillStyle=g;ctx.fill()}
     ctx.strokeStyle=OUT;ctx.lineWidth=1.2;ctx.stroke()};
   const eye=(cx,cy,r)=>{if(fl)return;ctx.shadowColor='#3ff';ctx.shadowBlur=5;circ(ctx,cx,cy,r,'#5ff');ctx.shadowBlur=0};
-  if(L.kopf===2){head(-4,hy+1.5,5);head(4.5,hy-1,5.2);eye(-2,hy+1,1.3);eye(6.5,hy-1.5,1.4)}
-  else{head(.5,hy,6.6);
-    if(L.kopf===1){eye(3,hy-.5,3);circ(ctx,3.6,hy-.5,1.2,'#063a44')}else{eye(1.2,hy-.6,1.4);eye(4.8,hy-.6,1.4)}
-    if(!fl){ctx.beginPath();ctx.moveTo(1.5,hy+3.6);ctx.lineTo(5.5,hy+3.6);ctx.moveTo(2.5,hy+2.8);ctx.lineTo(2.5,hy+4.4);ctx.moveTo(4.2,hy+2.8);ctx.lineTo(4.2,hy+4.4);ctx.lineWidth=.6;ctx.strokeStyle=OUT;ctx.stroke()}}
-  // vorderer Arm zielt
-  const ax=tw/2-2,hx=ax+lx*10,hy2=sh+ly*10;
-  limb(ax,sh,hx,hy2,aw,C(a.col));
-  if(L.arme===2)limb(hx,hy2,hx+lx*3.5,hy2+ly*3.5,aw+1.6,C('#3a4256'));
-  if(L.arme===1&&!fl){ctx.strokeStyle='#f6e8d8';ctx.lineWidth=1;ctx.beginPath();
-    for(const d of[-.55,0,.55]){const c=Math.cos(d),sn=Math.sin(d);ctx.moveTo(hx,hy2);ctx.lineTo(hx+(lx*c-ly*sn)*5,hy2+(lx*sn+ly*c)*5)}ctx.stroke()}
+  const teeth=()=>{if(fl)return;ctx.beginPath();ctx.moveTo(1.5,hy+3.6);ctx.lineTo(5.5,hy+3.6);ctx.moveTo(2.5,hy+2.8);ctx.lineTo(2.5,hy+4.4);ctx.moveTo(4.2,hy+2.8);ctx.lineTo(4.2,hy+4.4);ctx.lineWidth=.6;ctx.strokeStyle=OUT;ctx.stroke()};
+  if(k.id==='k3'){head(-4,hy+1.5,5);head(4.5,hy-1,5.2);eye(-2,hy+1,1.3);eye(6.5,hy-1.5,1.4)}
+  else if(k.id==='k2'){
+    poly(ctx,[-4,hy-4,-9,hy-13,-1,hy-6],C('#efe2c4'),OUT,.9);poly(ctx,[2,hy-6,4,hy-15,6.5,hy-4.5],C('#efe2c4'),OUT,.9);
+    head(.5,hy,6.6);eye(1.2,hy-.6,1.4);eye(4.8,hy-.6,1.4);teeth()}
+  else if(k.id==='k1'){head(.5,hy,6.6);poly(ctx,[5,hy-1.5,12.5,hy+1.5,5,hy+3.5],C('#e0b040'),OUT,.9);eye(2.6,hy-1.4,1.7)}
+  else{head(.5,hy,6.6);eye(1.2,hy-.6,1.4);eye(4.8,hy-.6,1.4);teeth()}
+  arm(aF,tw/2-2,sh,lx,ly);
   ctx.restore();
 }
 
@@ -306,7 +340,7 @@ const GROUND_MV=['walk','right','center'];
 
 // ---------- Spielzustand ----------
 let state='title',phase='',pt=0,time=0,shake=0;
-let p=null,b=null,eb=[],pb=[],hz=[],fx=[],bossN=1,diedAt=0,msg='',mSel=0,introLine=0;
+let p=null,b=null,eb=[],pb=[],hz=[],fx=[],bossN=1,msg='',introLine=0;
 let st=stats();
 
 const aim=o=>Math.atan2(p.y-17-o.y,p.x-o.x);
@@ -352,9 +386,9 @@ const A={
 // ---------- Kampf ----------
 function startFight(n){
   bossN=n;const d=BOSSES[n-1];st=stats();
-  p={x:140,y:GY,vy:0,gnd:true,hp:st.hp,inv:0,iv:0,cd:0,dcd:0,dashT:0,jb:0,mf:1,f:1,run:0,aim:0};
+  p={x:140,y:GY,vy:0,gnd:true,hp:st.hp,inv:0,iv:0,cd:0,dcd:0,dashT:0,jb:0,mf:1,f:1,run:0,aim:0,jumps:0,hits:0,horned:true,hurt:false};
   const vr=[26,42,62][d[4]-1],gnd=GROUND_MV.includes(d[6]);
-  b={def:d,n,hp:n,max:n,vr,r:vr*.68,gnd,x:d[6]==='center'?W/2:gnd?500:460,y:gnd?GY-vr:d[6]==='strafe'?85:150,f:-1,
+  b={def:d,n,hp:n*2,max:n*2,vr,r:vr*.68,gnd,x:d[6]==='center'?W/2:gnd?500:460,y:gnd?GY-vr:d[6]==='strafe'?85:150,f:-1,
      inv:0,atk:1,ai:0,timers:[],state:'move',st:0,dir:rnd()<.5?-1:1,oa:0,
      bvx:d[5]*SP*(rnd()<.5?-1:1)*.75,bvy:d[5]*SP*.6};
   eb=[];pb=[];hz=[];fx=[];state='fight';phase='intro';pt=1.7;msg='';
@@ -363,42 +397,46 @@ function startFight(n){
 function hurtPlayer(){
   if(phase!=='play'||p.inv>0||p.iv>0)return;
   p.hp--;shake=8;burst(p.x,p.y-17,16,'#ff3838');beep(120,.3,'sawtooth',.08,-80);
-  if(p.hp<=0){phase='dead';pt=1.5;diedAt=bossN;burst(p.x,p.y-17,34,'#ddd4ba',190)}else p.inv=1.3;
+  p.hurt=true;
+  if(p.hp<=0){phase='dead';pt=1.5;save.run=1;persist();burst(p.x,p.y-17,34,'#ddd4ba',190)}else p.inv=1.3+st.inv;
 }
 function hurtBoss(dmg){
-  if(b.inv>0||b.state==='hidden')return false;
-  b.hp-=dmg;b.inv=.7;shake=5;burst(b.x,b.y,14,b.def[3]);beep(520,.08,'square',.06,200);
-  if(b.hp<=0){
+  if(b.state==='hidden'||b.hp<=0)return false;
+  b.hp-=dmg;b.inv=.12;shake=Math.max(shake,3);burst(b.x,b.y,8,b.def[3]);beep(520,.06,'square',.05,200);
+  if(st.leech&&++p.hits%st.leech===0&&p.hp<st.hp){p.hp++;burst(p.x,p.y-17,12,'#40e0ff');beep(880,.12,'sine',.06,300)}
+  if(b.hp<=.001){
     b.hp=0;b.timers=[];eb=[];hz=[];phase='clear';pt=2.4;burst(b.x,b.y,60,b.def[2],240);burst(b.x,b.y,30,b.def[3],160);shake=12;
     beep(262,.1);setTimeout(()=>beep(330,.1),100);setTimeout(()=>beep(392,.25),200);
-    if(b.n>save.best){
-      const got=[];for(const k of SLOTS)for(const q of PARTS[k])if(q.u>save.best&&q.u<=b.n)got.push(q.n);
-      save.best=b.n;persist();msg=got.length?'Neues Leichenteil: '+got.join(', '):'';
-    }
+    const gain=3+b.n+(p.hurt?0:2);save.bones+=gain;save.best=Math.max(save.best,b.n);save.run=b.n>=30?1:b.n+1;persist();
+    msg='+'+gain+' Knochen'+(p.hurt?'':' (ohne Treffer +2)');
   }
   return true;
 }
 function updPlayer(dt){
   let mx=(K('KeyD','ArrowRight')?1:0)-(K('KeyA','ArrowLeft')?1:0);
+  const rage=st.rage&&p.hp===1,spd=st.speed*(rage?1.4:1);
   if(joy&&Math.abs(joy.dx)>.25)mx=Math.sign(joy.dx);
   p.inv-=dt;p.iv-=dt;p.cd-=dt;p.dcd-=dt;p.jb-=dt;
   if(KP('Space','KeyW','ArrowUp'))p.jb=.12;
   const hold=K('Space','KeyW','ArrowUp');
-  if(p.dashT>0){p.dashT-=dt;p.x+=p.ddx*460*dt;p.vy=0;fx.push({x:p.x,y:p.y-17+rnd(-10,10),vx:0,vy:0,life:.22,col:'#55ffff',r:3})}
+  if(p.dashT>0){p.dashT-=dt;p.x+=p.ddx*460*dt;p.vy=0;
+    if(st.horn&&!p.horned&&b.state!=='hidden'&&Math.hypot(p.x-b.x,p.y-17-b.y)<b.r+10){p.horned=true;hurtBoss(3);beep(160,.15,'sawtooth',.07)}
+    fx.push({x:p.x,y:p.y-17+rnd(-10,10),vx:0,vy:0,life:.22,col:'#55ffff',r:3})}
   else{
-    p.x+=mx*st.speed*dt;if(mx){p.run+=dt*st.speed*.085;p.mf=mx}else p.run=0;
-    if(KP('ShiftLeft','ShiftRight','KeyK','KeyL')&&p.dcd<=0){p.dashT=.22;p.iv=.32;p.dcd=st.dcd;p.ddx=mx||p.mf;beep(700,.08,'square',.04,400)}
-    if(p.jb>0&&p.gnd){p.vy=-JV;p.gnd=false;p.jb=0;beep(380,.07,'square',.03,260)}
+    p.x+=mx*spd*dt;if(mx){p.run+=dt*spd*.085;p.mf=mx}else p.run=0;
+    if(KP('ShiftLeft','ShiftRight','KeyK','KeyL')&&p.dcd<=0){p.dashT=.22;p.iv=.32;p.dcd=st.dcd;p.horned=false;p.ddx=mx||p.mf;beep(700,.08,'square',.04,400)}
+    if(p.jb>0&&(p.gnd||st.dbl&&p.jumps<2)){p.vy=-JV*st.jmp;p.jumps=p.gnd?1:2;p.gnd=false;p.jb=0;beep(p.jumps>1?480:380,.07,'square',.03,260);
+      if(p.jumps>1)for(let i=0;i<6;i++)fx.push({x:p.x+rnd(-6,6),y:p.y,vx:rnd(-50,50),vy:rnd(10,60),life:.3,col:'#8fd08f',r:2})}
     p.vy+=GRAV*dt*(p.vy<0&&!hold?2.6:1);p.y+=p.vy*dt;
-    if(p.y>=GY){p.y=GY;p.vy=0;if(!p.gnd){p.gnd=true;for(let i=0;i<4;i++)fx.push({x:p.x+rnd(-6,6),y:GY,vx:rnd(-40,40),vy:rnd(-30,0),life:.25,col:'#8a6a50',r:2})}}
+    if(p.y>=GY){p.y=GY;p.vy=0;if(!p.gnd){p.gnd=true;p.jumps=0;for(let i=0;i<4;i++)fx.push({x:p.x+rnd(-6,6),y:GY,vx:rnd(-40,40),vy:rnd(-30,0),life:.25,col:'#8a6a50',r:2})}}
   }
   p.x=clamp(p.x,AL+8,AR-8);
   // Touch: geschossen wird genau auf die Stelle, die rechts angetippt wird; sonst Blick in Laufrichtung
   const a=touchMode?(aimT?Math.atan2(aimT.y-(p.y-20),aimT.x-p.x):(p.mf<0?Math.PI:0)):mouse.down?Math.atan2(mouse.y-(p.y-20),mouse.x-p.x):Math.atan2(b.y-(p.y-20),b.x-p.x);
   p.aim=a;p.f=Math.cos(a)>=0?1:-1;
   if((mouse.down||(touchMode&&aimT)||K('KeyJ','KeyX'))&&p.cd<=0&&phase==='play'){
-    for(const o of st.twin?[-.1,.1]:[0])pb.push({x:p.x+Math.cos(a)*10,y:p.y-21+Math.sin(a)*10,vx:Math.cos(a+o)*st.bs,vy:Math.sin(a+o)*st.bs,life:st.life,dmg:st.dmg});
-    p.cd=st.cd;beep(st.dmg>1?180:660,.05,'square',.03,st.dmg>1?-60:-200);
+    for(const o of st.twin?[-.1,.1]:[0])pb.push({x:p.x+Math.cos(a)*10,y:p.y-21+Math.sin(a)*10,vx:Math.cos(a+o)*st.bs,vy:Math.sin(a+o)*st.bs,life:st.life,dmg:st.dmg,home:st.home});
+    p.cd=.45/st.fr/(rage?1.4:1);beep(st.dmg>1?180:660,.05,'square',.03,st.dmg>1?-60:-200);
   }
 }
 function updBoss(dt){
@@ -468,7 +506,10 @@ function updBullets(dt){
     if(hitP(e.x,e.y,e.r*.85))hurtPlayer();
   }
   for(let i=pb.length-1;i>=0;i--){
-    const s=pb[i];s.x+=s.vx*dt;s.y+=s.vy*dt;s.life-=dt;
+    const s=pb[i];
+    if(s.home&&b.state!=='hidden'){const v=Math.hypot(s.vx,s.vy);let a=Math.atan2(s.vy,s.vx),da=Math.atan2(b.y-s.y,b.x-s.x)-a;
+      da=Math.atan2(Math.sin(da),Math.cos(da));a+=clamp(da,-3*dt,3*dt);s.vx=Math.cos(a)*v;s.vy=Math.sin(a)*v}
+    s.x+=s.vx*dt;s.y+=s.vy*dt;s.life-=dt;
     let dead=s.life<=0||s.x<AL||s.x>AR||s.y<0||s.y>GY+6;
     if(!dead&&b.state!=='hidden'&&phase==='play'&&Math.hypot(s.x-b.x,s.y-b.y)<b.r+4){dead=true;if(!hurtBoss(s.dmg))fx.push({x:s.x,y:s.y,vx:0,vy:-30,life:.2,col:'#999',r:2})}
     if(dead)pb.splice(i,1);
@@ -493,8 +534,8 @@ function updFight(dt){
   pt-=dt;
   if(phase==='intro'){if(pt<=0)phase='play'}
   else if(phase==='play'){updPlayer(dt);updBoss(dt);updBullets(dt)}
-  else if(phase==='dead'){updBullets(dt);if(pt<=0){state='morgue';mSel=0;beep(98,.5,'triangle',.08)}}
-  else if(phase==='clear'){updPlayer(dt);updBullets(dt);if(pt<=0){if(bossN>=30)state='win';else startFight(bossN+1)}}
+  else if(phase==='dead'){updBullets(dt);if(pt<=0){openPile('Boss '+bossN+' ('+BOSSES[bossN-1][0]+') hat deinen Körper zerstört. Zurück zu Boss 1 – Knochen und Teile bleiben.');beep(98,.5,'triangle',.08)}}
+  else if(phase==='clear'){updPlayer(dt);updBullets(dt);if(pt<=0){if(bossN>=30)state='win';else openPile('Seele befreit! '+msg+'. Näh dich neu zusammen.')}}
   for(let i=fx.length-1;i>=0;i--){const f=fx[i];f.x+=f.vx*dt;f.y+=f.vy*dt;f.life-=dt;if(f.life<=0)fx.splice(i,1)}
 }
 
@@ -573,10 +614,16 @@ function paintMorgue(g){
   gr=g.createRadialGradient(128,40,6,128,200,230);gr.addColorStop(0,'rgba(180,255,230,.34)');gr.addColorStop(1,'rgba(180,255,230,0)');
   g.fillStyle=gr;g.beginPath();g.moveTo(112,44);g.lineTo(144,44);g.lineTo(250,330);g.lineTo(6,330);g.fill();
   g.fillStyle='#0a0f0f';g.fillRect(126,0,4,34);poly(g,[108,44,116,32,140,32,148,44],'#34403f');
-  // Bahre
-  poly(g,[30,302,226,302,238,318,18,318],'#6f8280',OUT,1.6);poly(g,[18,318,238,318,238,326,18,326],'#3c4a49',OUT,1.6);
-  g.fillStyle='#2a3534';g.fillRect(30,326,6,34);g.fillRect(220,326,6,34);
-  g.fillStyle='rgba(120,20,20,.7)';g.beginPath();g.ellipse(70,312,14,3,0,0,TAU);g.fill();g.beginPath();g.ellipse(190,308,8,2,0,0,TAU);g.fill();
+  // Leichenhaufen
+  poly(g,[0,H,0,306,34,294,72,286,112,282,152,286,192,298,226,312,236,H],'#2a2624',OUT,1.6);
+  const bone=(x1,y1,x2,y2)=>{for(const[w,c]of[[5.5,OUT],[3.5,'#a89a80']]){g.strokeStyle=c;g.lineWidth=w;g.lineCap='round';g.beginPath();g.moveTo(x1,y1);g.lineTo(x2,y2);g.stroke()}
+    for(const[x,y]of[[x1,y1],[x2,y2]])circ(g,x,y,2.6,'#b8aa90')};
+  for(const[a,b2,c,d]of[[10,300,52,312],[60,292,98,300],[126,290,170,302],[178,306,214,318],[30,326,70,340],[96,318,140,330],[150,334,196,326],[8,344,40,352],[200,344,230,352],[110,346,150,354]])bone(a,b2,c,d);
+  for(const[x,y,r]of[[40,304,8],[90,290,7],[146,294,8],[190,314,7],[18,326,7],[72,322,8],[124,312,9],[170,330,8],[214,334,7],[100,342,7],[46,346,6],[154,350,7]]){
+    circ(g,x,y,r,'#8a7e68');g.strokeStyle=OUT;g.lineWidth=1.2;g.stroke();
+    g.fillStyle='rgba(255,255,255,.12)';g.beginPath();g.arc(x-r*.25,y-r*.3,r*.45,0,TAU);g.fill();
+    g.fillStyle='#1a1416';g.fillRect(x-r*.55,y-r*.1,r*.38,r*.38);g.fillRect(x+r*.15,y-r*.1,r*.38,r*.38)}
+  g.fillStyle='rgba(120,20,20,.55)';g.beginPath();g.ellipse(60,300,14,3,0,0,TAU);g.fill();g.beginPath();g.ellipse(168,306,9,2,0,0,TAU);g.fill();
   gr=g.createRadialGradient(W/2,H/2,180,W/2,H/2,420);gr.addColorStop(0,'rgba(0,0,0,0)');gr.addColorStop(1,'rgba(0,0,0,.6)');g.fillStyle=gr;g.fillRect(0,0,W,H);
 }
 let bgArena,fgArena,bgMorgue;
@@ -634,7 +681,7 @@ function drawFight(){
   // Spieler
   if(phase!=='dead'){
     shadow(p.x,p.y,12);
-    if(!(p.inv>0&&(time*16|0)%2))drawBody(p.x,p.y,1,save.lo,{f:p.f,run:p.run,air:!p.gnd,aim:p.aim,flash:p.dashT>0});
+    if(!(p.inv>0&&(time*16|0)%2))drawBody(p.x,p.y,1,save.eq,{f:p.f,run:p.run,air:!p.gnd,aim:p.aim,flash:p.dashT>0});
   }
   // Geschosse
   ctx.lineCap='round';
@@ -661,7 +708,7 @@ function drawFight(){
     ctx.fillStyle=i<p.hp?'#ff3858':'#3a1c22';ctx.fill();ctx.strokeStyle=OUT;ctx.lineWidth=1.4;ctx.stroke();ctx.restore()}
   rr(ctx,12,30,62,6,3);ctx.fillStyle='#182a30';ctx.fill();ctx.strokeStyle=OUT;ctx.lineWidth=1;ctx.stroke();
   const dk=clamp(1-p.dcd/st.dcd,0,1);if(dk>.1){rr(ctx,12,30,62*dk,6,3);ctx.fillStyle=dk>=1?'#5ff':'#2a8a96';ctx.fill()}
-  txt('Rekord '+save.best,W-12,40,'#b0a090','right',12);
+  txt('Rekord '+save.best+'   ☠ '+save.bones,W-12,40,'#b0a090','right',12);
   if(touchMode&&phase!=='dead'){
     for(const[q,l]of[[JB,'SPRUNG'],[DB,'DASH']]){ctx.globalAlpha=.4;circ(ctx,q.x,q.y,q.r,'#fff');ctx.globalAlpha=1;ctx.strokeStyle='rgba(255,255,255,.8)';ctx.lineWidth=2;ctx.stroke();txt(l,q.x,q.y-6,'#fff','center',10,true)}
     if(joy){ctx.globalAlpha=.3;circ(ctx,joy.ox,joy.oy,30,'#fff');ctx.globalAlpha=.7;circ(ctx,joy.ox+joy.dx*26,joy.oy+(joy.up?-22:0),14,joy.up?'#ffd040':'#5ff');ctx.globalAlpha=1}
@@ -673,44 +720,93 @@ function drawFight(){
   if(phase==='clear'){band('rgba(0,0,0,.62)');txt(bossN>=30?'Der Gott ist gefallen':'Seele befreit',W/2,150,'#5ff','center',30,true,true);if(msg)txt(msg,W/2,190,'#ffd040','center',13,true)}
   if(phase==='dead'){band('rgba(70,0,0,.5)');txt('Dein Körper zerfällt',W/2,158,'#ff6050','center',30,true,true)}
 }
-function drawMorgue(){
+// ---------- Leichenhaufen: Körperteile tauschen und kaufen ----------
+let pSel=0,pCol=0,oSel=0,pileMsg='',pileBuy=-1;
+const ROW=i=>({x:232,y:62+i*31,w:178,h:28}),CARD=i=>({x:420,y:62+i*50,w:210,h:46}),GOB={x:420,y:302,w:210,h:44};
+const inR=(r,x,y)=>x>=r.x&&x<=r.x+r.w&&y>=r.y&&y<=r.y+r.h;
+const pct=v=>Math.round(v*100)+' %';
+function openPile(m){state='pile';pileMsg=m;pCol=0;pSel=Math.min(pSel,6);syncOpt()}
+function syncOpt(){if(pSel<7){oSel=PARTS[SLOTS[pSel].t].findIndex(q=>q.id===save.eq[SLOTS[pSel].k])}pileBuy=-1}
+function actOpt(i){
+  const sl=SLOTS[pSel],q=PARTS[sl.t][i];
+  if(save.eq[sl.k]===q.id){oSel=i;pileBuy=-1;return}
+  if(canEquip(sl,q)){oSel=i;pileBuy=-1;save.eq[sl.k]=q.id;persist();beep(520,.06);return}
+  if(pileBuy!==i){oSel=i;pileBuy=i;beep(300,.03);return}   // erstes Antippen: nur auswählen
+  if(save.bones>=q.p){
+    save.bones-=q.p;save.own[q.id]=(save.own[q.id]|0)+1;save.eq[sl.k]=q.id;persist();pileBuy=-1;
+    beep(523,.08);setTimeout(()=>beep(784,.12),80);
+  }else beep(110,.2,'sawtooth');
+}
+function drawPile(){
   ctx.drawImage(bgMorgue,0,0,W,H);
-  txt('Leichenhaus',W/2,8,'#a8e8d4','center',30,true,true);
-  txt(diedAt?'Boss '+diedAt+' ('+BOSSES[diedAt-1][0]+') hat deinen Körper zerstört. Rekord: '+save.best:'Deine Seele braucht einen Körper. Näh dir einen.',W/2,46,'#d0c8b0','center',13);
-  drawBody(128,302+Math.sin(time*2)*1,4.2,save.lo,{run:0});
-  const s=stats(),over=s.cost>s.cap;
-  SLOTS.forEach((k,i)=>{
-    const y=80+i*28,sel=i===mSel,q=part(k),n=PARTS[k].filter(o=>o.u<=save.best).length;
-    rr(ctx,250,y,376,25,5);ctx.fillStyle=sel?'rgba(168,232,212,.2)':'rgba(0,0,0,.28)';ctx.fill();
-    if(sel){ctx.strokeStyle='#a8e8d4';ctx.lineWidth=1.2;ctx.stroke()}
-    txt(SLOTN[k],260,y+6,sel?'#a8e8d4':'#789088','left',12,true);
-    txt((sel?'‹ ':'')+q.n+(sel?' ›':''),322,y+5,sel?'#fff':'#d0c8b0','left',14,sel);
-    txt(n+'/3',556,y+6,'#708078','right',12);
-    if(k!=='herz')txt('Kraft '+q.c,618,y+6,q.c?'#ffd040':'#708078','right',12,true);
-  });
-  const k=SLOTS[mSel],q=part(k),nx=PARTS[k].find(o=>o.u>save.best);
-  txt(q.d,254,226,'#f0e8d0','left',14);
-  txt(nx?'Nächstes Teil: besiege Boss '+nx.u:'Alle Teile gefunden.',254,246,'#708078','left',12);
-  txt('LP '+s.hp+'     Tempo '+Math.round(s.speed/150*100)+' %     Schuss alle '+s.cd+' s     Schaden '+s.dmg,254,268,'#a8e8d4','left',13,true);
-  txt('Körperkraft',254,290,over?'#ff6050':'#d0c8b0','left',13);
-  for(let i=0;i<Math.max(s.cap,s.cost);i++){rr(ctx,340+i*17,290,14,13,3);ctx.fillStyle=i>=s.cap?'#ff3020':i<s.cost?'#ffd040':'#2a3838';ctx.fill();ctx.strokeStyle=OUT;ctx.lineWidth=1;ctx.stroke()}
-  txt(s.cost+'/'+s.cap,618,290,over?'#ff6050':'#d0c8b0','right',13,true);
-  rr(ctx,318,316,200,30,7);ctx.fillStyle=over?'#4a2222':(time*2|0)%2?'#2f7a68':'#286454';ctx.fill();ctx.strokeStyle=OUT;ctx.lineWidth=1.6;ctx.stroke();
-  txt(over?'Körper würde zerbrechen':'In die Arena',418,323,over?'#ff8070':'#fff','center',15,true);
-  txt(touchMode?'Teil antippen':'W/S · A/D · Enter',618,326,'#708078','right',11);
+  txt('Leichenhaufen',14,8,'#a8e8d4','left',26,true,true);
+  txt('☠ '+save.bones+' Knochen',W-58,12,'#f0e0b0','right',17,true);
+  txt(pileMsg,14,40,'#d0c8b0','left',12);
+  const s=stats();
+  drawBody(112,292+Math.sin(time*2),3.4,save.eq,{run:0});
+  rr(ctx,8,300,214,52,6);ctx.fillStyle='rgba(6,12,12,.78)';ctx.fill();
+  txt('Herzen '+s.hp+'   Tempo '+pct(s.speed/150)+'   Feuer '+pct(s.fr),16,307,'#a8e8d4','left',11,true);
+  txt('Schaden '+pct(s.dmg)+'   Reichweite '+pct(s.bs*s.life/357),16,323,'#a8e8d4','left',11,true);
+  txt('Dash '+pct(.9/s.dcd)+'   Sprung '+pct(s.jmp)+(s.dbl?' ×2':''),16,339,'#a8e8d4','left',11,true);
+  // Plätze
+  SLOTS.forEach((sl,i)=>{const r=ROW(i),sel=i===pSel,q=PART[save.eq[sl.k]];
+    rr(ctx,r.x,r.y,r.w,r.h,5);ctx.fillStyle=sel?'rgba(168,232,212,.22)':'rgba(0,0,0,.35)';ctx.fill();
+    if(sel){ctx.strokeStyle=pCol===0?'#a8e8d4':'rgba(168,232,212,.5)';ctx.lineWidth=1.2;ctx.stroke()}
+    txt(sl.n.toUpperCase(),r.x+8,r.y+2,sel?'#a8e8d4':'#789088','left',9,true);
+    txt(q.n,r.x+8,r.y+12,q.p?'#ffd890':'#d0c8b0','left',12,sel)});
+  // Teile für den gewählten Platz
+  if(pSel<7){const sl=SLOTS[pSel],pair=sl.t==='arm'||sl.t==='bein';
+    PARTS[sl.t].forEach((q,i)=>{const r=CARD(i),on=save.eq[sl.k]===q.id,ce=canEquip(sl,q),sel=i===oSel&&pCol===1||i===pileBuy;
+      rr(ctx,r.x,r.y,r.w,r.h,6);ctx.fillStyle=on?'rgba(80,220,220,.2)':sel?'rgba(255,216,120,.16)':'rgba(0,0,0,.4)';ctx.fill();
+      if(on||sel){ctx.strokeStyle=on?'#5ff':'#ffd878';ctx.lineWidth=1.3;ctx.stroke()}
+      ctx.fillStyle=q.col;ctx.fillRect(r.x+6,r.y+7,4,32);
+      txt(q.n,r.x+16,r.y+5,'#fff','left',12,true);
+      txt(q.d,r.x+16,r.y+24,'#d0c8b0','left',10);
+      const n=owned(q.id),stt=on?['ANGELEGT','#5ff']:ce?['anlegen','#a8e8d4']:['☠ '+q.p+(pair&&n===1?' (2.)':''),save.bones>=q.p?'#ffd878':'#ff6050'];
+      txt(stt[0],r.x+r.w-8,r.y+6,stt[1],'right',10,true)});
+  }
+  const hint=(()=>{if(pSel>=7)return'';const sl=SLOTS[pSel],q=PARTS[sl.t][pileBuy];
+    if(q)return save.bones>=q.p?'Nochmal antippen: für '+q.p+' Knochen kaufen':'Zu wenig Knochen ('+save.bones+'/'+q.p+')';
+    return sl.t==='arm'||sl.t==='bein'?'Wirkt pro '+(sl.t==='arm'?'Arm':'Bein')+', zwei gleiche verdoppeln.':'Antippen: anlegen oder kaufen'})();
+  txt(hint,W-14,268,pileBuy>=0?'#ffd878':'#789088','right',10.5,pileBuy>=0);
+  // Kampf-Knopf
+  rr(ctx,GOB.x,GOB.y,GOB.w,GOB.h,8);ctx.fillStyle=pSel===7?'#3a9a84':(time*2|0)%2?'#2f7a68':'#286454';ctx.fill();
+  ctx.strokeStyle=pSel===7?'#fff':OUT;ctx.lineWidth=1.6;ctx.stroke();
+  txt('In die Arena',GOB.x+GOB.w/2,GOB.y+5,'#fff','center',15,true);
+  txt('Boss '+save.run+' · '+BOSSES[save.run-1][0],GOB.x+GOB.w/2,GOB.y+25,'#d8f0e8','center',10.5);
+  if(!touchMode)txt('W/S · A/D · Enter',232,284,'#58706a','left',10);
+}
+function updPile(){
+  if(pCol===0){
+    if(KP('KeyW','ArrowUp')){pSel=(pSel+7)%8;syncOpt();beep(300,.03)}
+    if(KP('KeyS','ArrowDown')){pSel=(pSel+1)%8;syncOpt();beep(300,.03)}
+    if(pSel<7&&KP('KeyD','ArrowRight','Enter','NumpadEnter','Space')){pCol=1;syncOpt();beep(360,.03)}
+    else if(pSel===7&&ok())startFight(save.run);
+  }else{
+    const n=PARTS[SLOTS[pSel].t].length;
+    if(KP('KeyW','ArrowUp')){oSel=(oSel+n-1)%n;pileBuy=-1;beep(300,.03)}
+    if(KP('KeyS','ArrowDown')){oSel=(oSel+1)%n;pileBuy=-1;beep(300,.03)}
+    if(ok())actOpt(oSel);
+    if(KP('KeyA','ArrowLeft','Escape')){pCol=0;syncOpt();beep(250,.03)}
+  }
+  if(mouse.click){const x=mouse.x,y=mouse.y;
+    for(let i=0;i<7;i++)if(inR(ROW(i),x,y)){if(pSel!==i){pSel=i;syncOpt();beep(300,.03)}pCol=1}
+    if(pSel<7)for(let i=0;i<PARTS[SLOTS[pSel].t].length;i++)if(inR(CARD(i),x,y)){pCol=1;actOpt(i)}
+    if(inR(GOB,x,y))startFight(save.run);
+  }
 }
 const INTRO=[
  ['Welche Macht wohnt der Seele inne?','Welche Rolle spielt sie bei der Formung','von Identität und Körper?'],
  ['Um das zu beantworten, wurden Menschen zu Göttern –','und verfielen dem Wahnsinn.','Imperien entstanden und fielen.'],
  ['Du warst der Sohn eines solchen Gottes.','Jetzt bist du nur noch eine Seele','in einem Leichenhaus unter dem Knochenkolosseum.'],
- ['30 Gegner stehen zwischen dir und deinem Vater.','Dein Körper hält nur einen Treffer aus.','Stirbt er, nähst du dir einen neuen.']
+ ['30 Gegner stehen zwischen dir und deinem Vater.','Nach jedem Kampf nähst du dich im Leichenhaufen neu zusammen.','Bezahlt wird mit den Knochen deiner Gegner.']
 ];
 function drawTitle(){
   drawStage();ctx.drawImage(fgArena,0,0,W,H);ctx.fillStyle='rgba(8,5,7,.62)';ctx.fillRect(0,0,W,H);
   if(state==='title'){
     ctx.shadowColor='#3ff';ctx.shadowBlur=24;txt('SOULSTITCH',W/2,62,'#7ff','center',64,true,true);ctx.shadowBlur=0;
     txt('Boss Rush im Knochenkolosseum',W/2,138,'#e0d6bc','center',16,false,true);
-    drawBody(W/2,236,2.2,save.lo,{run:0});
+    drawBody(W/2,236,2.2,save.eq,{run:0});
     if((time*2|0)%2)txt(touchMode?'Tippen zum Starten':'Enter drücken',W/2,258,'#fff','center',15,true);
     txt(touchMode?'Links ziehen: laufen, nach oben: springen · Rechts tippen: dorthin schießen · Knopf: Dash':'A/D: laufen · W oder Leertaste: springen · Shift oder K: ausweichen · Maus oder J: schießen',W/2,300,'#b0a090','center',12);
     if(save.best)txt('Rekord: '+save.best+' Bosse',W/2,322,'#ffd040','center',13,true);
@@ -723,40 +819,24 @@ function drawWin(){
   drawStage();ctx.fillStyle='rgba(8,5,7,.7)';ctx.fillRect(0,0,W,H);
   txt('Der Vater ist gefallen',W/2,70,'#ffd040','center',40,true,true);
   ['Der Gott des Imperiums ist tot.','Doch die Frage bleibt:','Welche Macht wohnt der Seele inne?'].forEach((l,i)=>txt(l,W/2,140+i*26,'#f0e8d0','center',18,false,true));
-  drawBody(W/2,290,2,save.lo,{run:0});
-  if((time*2|0)%2)txt('Enter: zurück ins Leichenhaus',W/2,312,'#fff','center',14,true);
+  drawBody(W/2,290,2,save.eq,{run:0});
+  if((time*2|0)%2)txt((touchMode?'Tippen':'Enter')+': zurück zum Leichenhaufen',W/2,312,'#fff','center',14,true);
 }
 
 // ---------- Hauptschleife ----------
 const ok=()=>KP('Enter','NumpadEnter','Space');
-function cyclePart(i,dir){
-  const k=SLOTS[i];let j=save.lo[k];for(let n=0;n<3;n++){j=(j+dir+3)%3;if(PARTS[k][j].u<=save.best)break}
-  if(j!==save.lo[k]){save.lo[k]=j;persist();beep(520,.05)}else beep(110,.05);
-}
 function update(dt){
   time+=dt;if(shake>0)shake=Math.max(0,shake-dt*24);
   if(state==='title'){if(ok()||mouse.click){state='intro';introLine=0;beep(440,.1)}}
-  else if(state==='intro'){if(ok()||mouse.click){beep(440,.06);if(++introLine>=INTRO.length){state='morgue';diedAt=0}}}
-  else if(state==='morgue'){
-    if(KP('KeyW','ArrowUp')){mSel=(mSel+4)%5;beep(300,.03)}
-    if(KP('KeyS','ArrowDown')){mSel=(mSel+1)%5;beep(300,.03)}
-    const dir=(KP('KeyD','ArrowRight')?1:0)-(KP('KeyA','ArrowLeft')?1:0);
-    if(dir)cyclePart(mSel,dir);
-    let go=ok();
-    if(mouse.click&&mouse.x>244){
-      const i=Math.floor((mouse.y-78)/28);
-      if(mouse.y>312)go=true;
-      else if(i>=0&&i<5&&mouse.y>=78){if(i!==mSel){mSel=i;beep(300,.03)}else cyclePart(i,1)}
-    }
-    if(go){const s=stats();if(s.cost<=s.cap)startFight(1);else beep(110,.2,'sawtooth')}
-  }
+  else if(state==='intro'){if(ok()||mouse.click){beep(440,.06);if(++introLine>=INTRO.length)openPile('Deine Seele braucht einen Körper. Näh dir einen zusammen.')}}
+  else if(state==='pile')updPile();
   else if(state==='fight')updFight(dt);
-  else if(state==='win'){if(ok()||mouse.click){state='morgue';diedAt=0}}
+  else if(state==='win'){if(ok()||mouse.click)openPile('Der Vater ist gefallen. Ein neuer Lauf beginnt bei Boss 1.')}
   pressed.clear();mouse.click=false;
 }
 function draw(){
   ctx.setTransform(cv.width/W,0,0,cv.height/H,0,0);
-  if(state==='fight')drawFight();else if(state==='morgue')drawMorgue();else if(state==='win')drawWin();else drawTitle();
+  if(state==='fight')drawFight();else if(state==='pile')drawPile();else if(state==='win')drawWin();else drawTitle();
 }
 let last=performance.now();
 function loop(now){
@@ -764,7 +844,7 @@ function loop(now){
   resize();update(dt);draw();requestAnimationFrame(loop);
 }
 // Testhaken für die Konsole: __dbg.fight(n) springt zu Boss n
-window.__dbg={fight:n=>startFight(n),get s(){return{state,phase,bossN,hp:b&&b.hp,eb:eb.length}}};
+window.__dbg={fight:n=>startFight(n),bones:n=>{save.bones=n},pile:()=>openPile('Test'),get s(){return{state,phase,bossN,hp:b&&b.hp,eb:eb.length}}};
 resize();cv.focus();requestAnimationFrame(loop);
 </script>
 </body>
