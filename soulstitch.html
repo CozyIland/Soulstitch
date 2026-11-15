@@ -398,7 +398,7 @@ function hurtPlayer(){
   if(phase!=='play'||p.inv>0||p.iv>0)return;
   p.hp--;shake=8;burst(p.x,p.y-17,16,'#ff3838');beep(120,.3,'sawtooth',.08,-80);
   p.hurt=true;
-  if(p.hp<=0){phase='dead';pt=1.5;save.run=1;persist();burst(p.x,p.y-17,34,'#ddd4ba',190)}else p.inv=1.3+st.inv;
+  if(p.hp<=0){phase='dead';deadT=0;p.dieY=p.y;p.inv=0;p.dashT=0;persist();burst(p.x,p.y-17,14,'#ddd4ba',120)}else p.inv=1.3+st.inv;
 }
 function hurtBoss(dmg){
   if(b.state==='hidden'||b.hp<=0)return false;
@@ -534,7 +534,8 @@ function updFight(dt){
   pt-=dt;
   if(phase==='intro'){if(pt<=0)phase='play'}
   else if(phase==='play'){updPlayer(dt);updBoss(dt);updBullets(dt)}
-  else if(phase==='dead'){updBullets(dt);if(pt<=0){openPile('Boss '+bossN+' ('+BOSSES[bossN-1][0]+') hat deinen Körper zerstört. Knochen und Teile bleiben – näh dich neu zusammen.');beep(98,.5,'triangle',.08)}}
+  else if(phase==='dead'){deadT+=dt;updBullets(dt);if(deadT>=2.4&&deadT-dt<2.4){beep(73,1.6,'triangle',.1);beep(110,1.2,'sine',.05,-30)}
+    if(deadT>=4.8)startFall('Boss '+bossN+' ('+BOSSES[bossN-1][0]+') hat deinen Körper zerstört. Knochen und Teile bleiben – näh dich neu zusammen.')}
   else if(phase==='clear'){updPlayer(dt);updBullets(dt);if(pt<=0){if(bossN>=30)state='win';else startFight(bossN+1)}}
   for(let i=fx.length-1;i>=0;i--){const f=fx[i];f.x+=f.vx*dt;f.y+=f.vy*dt;f.life-=dt;if(f.life<=0)fx.splice(i,1)}
 }
@@ -610,20 +611,34 @@ function paintMorgue(g){
   // Kühlfächer
   for(let i=0;i<4;i++){rr(g,14+i*52,66,46,34,3);g.fillStyle='#2b3a39';g.fill();g.strokeStyle=OUT;g.lineWidth=1.4;g.stroke();
     g.fillStyle='#5a6c6a';g.fillRect(30+i*52,80,14,4);g.fillStyle='rgba(255,255,255,.06)';g.fillRect(16+i*52,68,42,3)}
-  // Lampe
-  gr=g.createRadialGradient(128,40,6,128,200,230);gr.addColorStop(0,'rgba(180,255,230,.34)');gr.addColorStop(1,'rgba(180,255,230,0)');
-  g.fillStyle=gr;g.beginPath();g.moveTo(112,44);g.lineTo(144,44);g.lineTo(250,330);g.lineTo(6,330);g.fill();
-  g.fillStyle='#0a0f0f';g.fillRect(126,0,4,34);poly(g,[108,44,116,32,140,32,148,44],'#34403f');
-  // Leichenhaufen
-  poly(g,[0,H,0,306,34,294,72,286,112,282,152,286,192,298,226,312,236,H],'#2a2624',OUT,1.6);
-  const bone=(x1,y1,x2,y2)=>{for(const[w,c]of[[5.5,OUT],[3.5,'#a89a80']]){g.strokeStyle=c;g.lineWidth=w;g.lineCap='round';g.beginPath();g.moveTo(x1,y1);g.lineTo(x2,y2);g.stroke()}
-    for(const[x,y]of[[x1,y1],[x2,y2]])circ(g,x,y,2.6,'#b8aa90')};
-  for(const[a,b2,c,d]of[[10,300,52,312],[60,292,98,300],[126,290,170,302],[178,306,214,318],[30,326,70,340],[96,318,140,330],[150,334,196,326],[8,344,40,352],[200,344,230,352],[110,346,150,354]])bone(a,b2,c,d);
-  for(const[x,y,r]of[[40,304,8],[90,290,7],[146,294,8],[190,314,7],[18,326,7],[72,322,8],[124,312,9],[170,330,8],[214,334,7],[100,342,7],[46,346,6],[154,350,7]]){
-    circ(g,x,y,r,'#8a7e68');g.strokeStyle=OUT;g.lineWidth=1.2;g.stroke();
+  // Lichtschacht in der Decke: hier fallen die Toten aus der Arena herunter
+  gr=g.createLinearGradient(0,0,0,300);gr.addColorStop(0,'rgba(190,255,235,.34)');gr.addColorStop(1,'rgba(190,255,235,0)');
+  g.fillStyle=gr;g.beginPath();g.moveTo(80,0);g.lineTo(146,0);g.lineTo(262,320);g.lineTo(-38,320);g.fill();
+  g.fillStyle='#040707';g.beginPath();g.ellipse(113,0,40,12,0,0,TAU);g.fill();
+  g.strokeStyle='#2b3a39';g.lineWidth=3;g.stroke();
+  // Riesiger Leichenhaufen
+  let seed=11;const R=()=>(seed=seed*16807%2147483647)/2147483647;
+  const top=x=>262+Math.pow(Math.abs(x-112)/170,1.5)*110;
+  g.beginPath();g.moveTo(-40,H);for(let x=-40;x<=290;x+=6)g.lineTo(x,top(x));g.lineTo(290,H);g.closePath();
+  gr=g.createLinearGradient(0,256,0,H);gr.addColorStop(0,'#3a332e');gr.addColorStop(1,'#141011');g.fillStyle=gr;g.fill();
+  g.strokeStyle=OUT;g.lineWidth=1.6;g.stroke();
+  const bone=(x,y,a,l)=>{const dx=Math.cos(a)*l/2,dy=Math.sin(a)*l/2;
+    for(const[w,c]of[[5,OUT],[3.2,'#a89a80']]){g.strokeStyle=c;g.lineWidth=w;g.lineCap='round';g.beginPath();g.moveTo(x-dx,y-dy);g.lineTo(x+dx,y+dy);g.stroke()}
+    circ(g,x-dx,y-dy,2.4,'#b8aa90');circ(g,x+dx,y+dy,2.4,'#b8aa90')};
+  const skull=(x,y,r)=>{circ(g,x,y,r,'#8a7e68');g.strokeStyle=OUT;g.lineWidth=1.2;g.stroke();
     g.fillStyle='rgba(255,255,255,.12)';g.beginPath();g.arc(x-r*.25,y-r*.3,r*.45,0,TAU);g.fill();
-    g.fillStyle='#1a1416';g.fillRect(x-r*.55,y-r*.1,r*.38,r*.38);g.fillRect(x+r*.15,y-r*.1,r*.38,r*.38)}
-  g.fillStyle='rgba(120,20,20,.55)';g.beginPath();g.ellipse(60,300,14,3,0,0,TAU);g.fill();g.beginPath();g.ellipse(168,306,9,2,0,0,TAU);g.fill();
+    g.fillStyle='#1a1416';g.fillRect(x-r*.55,y-r*.1,r*.38,r*.38);g.fillRect(x+r*.15,y-r*.1,r*.38,r*.38)};
+  const corpse=(x,y,a,s)=>{g.save();g.translate(x,y);g.rotate(a);g.scale(s,s);
+    const c=['#6e665a','#7a6c5e','#5e6660'][R()*3|0];
+    for(const[x1,y1,x2,y2]of[[-6,-2,-14,-8],[-6,2,-15,6],[6,-2,15,-5],[6,2,14,8]])
+      for(const[w,cc]of[[4.4,OUT],[2.8,c]]){g.strokeStyle=cc;g.lineWidth=w;g.lineCap='round';g.beginPath();g.moveTo(x1,y1);g.lineTo(x2,y2);g.stroke()}
+    rr(g,-8,-4.5,16,9,3);g.fillStyle=c;g.fill();g.strokeStyle=OUT;g.lineWidth=1.2;g.stroke();
+    circ(g,-11,0,4.5,'#8a7e68');g.strokeStyle=OUT;g.stroke();g.restore()};
+  for(let i=0;i<150;i++){const x=R()*330-40,t=top(x),y=t+6+R()*(H-t);if(y>H+6)continue;const k=R();
+    if(k<.3)corpse(x,y,R()*TAU,1.3+R()*.6);else if(k<.65)bone(x,y,R()*TAU,14+R()*14);else skull(x,y,5+R()*4)}
+  for(const x of[6,40,74,98,138,166,198,232])skull(x,top(x)+2,6+R()*2);
+  corpse(66,top(66)+4,.3,1.6);corpse(176,top(176)+6,-.4,1.5);bone(124,top(124)+3,.2,22);bone(96,top(96)+4,-.5,18);
+  gr=g.createLinearGradient(0,268,0,H);gr.addColorStop(0,'rgba(0,0,0,0)');gr.addColorStop(1,'rgba(0,0,0,.6)');g.fillStyle=gr;g.fillRect(-40,256,340,H);
   gr=g.createRadialGradient(W/2,H/2,180,W/2,H/2,420);gr.addColorStop(0,'rgba(0,0,0,0)');gr.addColorStop(1,'rgba(0,0,0,.6)');g.fillStyle=gr;g.fillRect(0,0,W,H);
 }
 let bgArena,fgArena,bgMorgue;
@@ -679,7 +694,8 @@ function drawFight(){
     drawShape(d[1],b.x+ox,b.y+(b.gnd?0:Math.sin(time*3)*3),b.vr,b.f,d[2],d[3],b.inv>0&&(time*20|0)%2);
   }
   // Spieler
-  if(phase!=='dead'){
+  if(phase==='dead')deadBody();
+  else{
     shadow(p.x,p.y,12);
     if(!(p.inv>0&&(time*16|0)%2))drawBody(p.x,p.y,1,save.eq,{f:p.f,run:p.run,air:!p.gnd,aim:p.aim,flash:p.dashT>0});
   }
@@ -718,7 +734,14 @@ function drawFight(){
   const band=c=>{ctx.fillStyle=c;ctx.fillRect(0,138,W,74)};
   if(phase==='intro'){band('rgba(0,0,0,.62)');txt('BOSS '+b.n,W/2,146,d[3],'center',14,true);txt(d[0],W/2,166,'#fff','center',30,true,true)}
   if(phase==='clear'){band('rgba(0,0,0,.62)');txt(bossN>=30?'Der Gott ist gefallen':'Seele befreit',W/2,150,'#5ff','center',30,true,true);if(msg)txt(msg,W/2,190,'#ffd040','center',13,true)}
-  if(phase==='dead'){band('rgba(70,0,0,.5)');txt('Dein Körper zerfällt',W/2,158,'#ff6050','center',30,true,true)}
+  if(phase==='dead'){
+    // alles außer der Leiche versinkt im Schwarz, dann YOU DIED
+    const a=clamp((deadT-.5)/1.8,0,1);ctx.fillStyle='rgba(0,0,0,'+a+')';ctx.fillRect(0,0,W,H);
+    if(a>0)deadBody();
+    const ta=clamp((deadT-2.4)/.9,0,1)*clamp((4.8-deadT)/.5,0,1);
+    if(ta>0){ctx.globalAlpha=ta;ctx.shadowColor='#a00';ctx.shadowBlur=26;txt('YOU DIED',W/2,128+(1-ta)*6,'#c8281c','center',58,true,true);ctx.shadowBlur=0;
+      txt('Besiegt von '+d[0]+' · Boss '+bossN,W/2,204,'#8a7a70','center',13,false,true);ctx.globalAlpha=1}
+  }
 }
 // ---------- Leichenhaufen: Körperteile tauschen und kaufen ----------
 let pSel=0,pCol=0,oSel=0,pileMsg='',pileBuy=-1;
@@ -739,11 +762,15 @@ function actOpt(i){
 }
 function drawPile(){
   ctx.drawImage(bgMorgue,0,0,W,H);
+  drawBody(112,264+Math.sin(time*2),3.4,save.eq,{run:0});
+  drawPileUI(1);
+}
+function drawPileUI(al){
+  ctx.globalAlpha=al;
   txt('Leichenhaufen',14,8,'#a8e8d4','left',26,true,true);
   txt('☠ '+save.bones+' Knochen',W-58,12,'#f0e0b0','right',17,true);
   txt(pileMsg,14,40,'#d0c8b0','left',12);
   const s=stats();
-  drawBody(112,292+Math.sin(time*2),3.4,save.eq,{run:0});
   rr(ctx,8,300,214,52,6);ctx.fillStyle='rgba(6,12,12,.78)';ctx.fill();
   txt('Herzen '+s.hp+'   Tempo '+pct(s.speed/150)+'   Feuer '+pct(s.fr),16,307,'#a8e8d4','left',11,true);
   txt('Schaden '+pct(s.dmg)+'   Reichweite '+pct(s.bs*s.life/357),16,323,'#a8e8d4','left',11,true);
@@ -775,6 +802,7 @@ function drawPile(){
   txt('In die Arena',GOB.x+GOB.w/2,GOB.y+5,'#fff','center',15,true);
   txt('Neuer Lauf ab Boss 1 · '+BOSSES[0][0],GOB.x+GOB.w/2,GOB.y+25,'#d8f0e8','center',10.5);
   if(!touchMode)txt('W/S · A/D · Enter',232,284,'#58706a','left',10);
+  ctx.globalAlpha=1;
 }
 function updPile(){
   if(pCol===0){
@@ -794,6 +822,35 @@ function updPile(){
     if(pSel<7)for(let i=0;i<PARTS[SLOTS[pSel].t].length;i++)if(inR(CARD(i),x,y)){pCol=1;actOpt(i)}
     if(inR(GOB,x,y))startFight(1);
   }
+}
+// ---------- Tod: Leichenfall in den Haufen ----------
+let deadT=0,fallT=0,fallHit=false;
+function deadBody(){
+  const k=clamp(deadT/.45,0,1),e=k*k,y=p.dieY+(GY-p.dieY)*e;
+  ctx.save();ctx.translate(p.x,y-3*e);ctx.rotate(-Math.PI/2*e*p.f);drawBody(0,0,1,save.eq,{f:p.f,aim:p.aim});ctx.restore();
+}
+function startFall(m){openPile(m);state='fall';fallT=0;fallHit=false;fx=[];beep(500,1,'sine',.04,-420)}
+const LAND=1.35,RISE=2.5,UI=2.9;
+function updFall(dt){
+  fallT+=dt;if(shake>0)shake=Math.max(0,shake-dt*24);
+  if(!fallHit&&fallT>=LAND){fallHit=true;shake=10;beep(55,.45,'sawtooth',.1);beep(95,.3,'triangle',.09);
+    for(let i=0;i<4;i++)setTimeout(()=>beep(rnd(700,1100),.04,'square',.025),60+i*55);
+    for(let i=0;i<26;i++){const a=-Math.PI*rnd(.05,.95),s=rnd(40,170);fx.push({x:112+rnd(-50,50),y:262,vx:Math.cos(a)*s,vy:Math.sin(a)*s,g:300,life:rnd(.4,.9),col:i%3?'#a89a80':'#5a4a40',r:rnd(1.5,3)})}}
+  for(let i=fx.length-1;i>=0;i--){const f=fx[i];if(f.g)f.vy+=f.g*dt;f.x+=f.vx*dt;f.y+=f.vy*dt;f.life-=dt;if(f.life<=0)fx.splice(i,1)}
+  if(fallT>UI+.5||(fallT>.8&&(ok()||mouse.click)))state='pile';
+}
+function drawFall(){
+  const t=fallT,s=3.4;let cx,cy,r;
+  ctx.save();if(shake>0)ctx.translate(rnd(-shake,shake)*.6,rnd(-shake,shake)*.6);
+  ctx.drawImage(bgMorgue,0,0,W,H);
+  if(t<LAND){const k=clamp((t-.2)/(LAND-.2),0,1);cx=150-38*k;cy=-120+(240+120)*k*k;r=-(Math.PI/2+TAU)*k}
+  else if(t<RISE){cx=112;cy=240;r=-Math.PI/2}
+  else{const k=clamp((t-RISE)/.45,0,1),e=k*k*(3-2*k);cx=112;cy=240+(264-20*s-240)*e;r=-Math.PI/2*(1-e)}
+  ctx.translate(cx,cy);ctx.rotate(r);drawBody(0,20*s,s,save.eq,{run:0,air:t<LAND});ctx.setTransform(cv.width/W,0,0,cv.height/H,0,0);
+  for(const f of fx){ctx.globalAlpha=clamp(f.life*3,0,1);circ(ctx,f.x,f.y,f.r,f.col)}ctx.globalAlpha=1;
+  ctx.restore();
+  const bl=1-clamp(t/.7,0,1);if(bl>0){ctx.fillStyle='rgba(0,0,0,'+bl+')';ctx.fillRect(0,0,W,H)}
+  if(t>UI)drawPileUI(clamp((t-UI)/.45,0,1));
 }
 const INTRO=[
  ['Welche Macht wohnt der Seele inne?','Welche Rolle spielt sie bei der Formung','von Identität und Körper?'],
@@ -830,13 +887,14 @@ function update(dt){
   if(state==='title'){if(ok()||mouse.click){state='intro';introLine=0;beep(440,.1)}}
   else if(state==='intro'){if(ok()||mouse.click){beep(440,.06);if(++introLine>=INTRO.length)openPile('Deine Seele braucht einen Körper. Näh dir einen zusammen.')}}
   else if(state==='pile')updPile();
+  else if(state==='fall')updFall(dt);
   else if(state==='fight')updFight(dt);
   else if(state==='win'){if(ok()||mouse.click)openPile('Der Vater ist gefallen. Ein neuer Lauf beginnt bei Boss 1.')}
   pressed.clear();mouse.click=false;
 }
 function draw(){
   ctx.setTransform(cv.width/W,0,0,cv.height/H,0,0);
-  if(state==='fight')drawFight();else if(state==='pile')drawPile();else if(state==='win')drawWin();else drawTitle();
+  if(state==='fight')drawFight();else if(state==='pile')drawPile();else if(state==='fall')drawFall();else if(state==='win')drawWin();else drawTitle();
 }
 let last=performance.now();
 function loop(now){
@@ -844,7 +902,7 @@ function loop(now){
   resize();update(dt);draw();requestAnimationFrame(loop);
 }
 // Testhaken für die Konsole: __dbg.fight(n) springt zu Boss n
-window.__dbg={fight:n=>startFight(n),bones:n=>{save.bones=n},pile:()=>openPile('Test'),get s(){return{state,phase,bossN,hp:b&&b.hp,eb:eb.length}}};
+window.__dbg={fight:n=>startFight(n),bones:n=>{save.bones=n},pile:()=>openPile('Test'),die:()=>{p.inv=0;p.iv=0;p.hp=1;hurtPlayer()},get s(){return{state,phase,bossN,hp:b&&b.hp,eb:eb.length}}};
 resize();cv.focus();requestAnimationFrame(loop);
 </script>
 </body>
