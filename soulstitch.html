@@ -3,15 +3,26 @@
 <head>
 <meta charset="utf-8">
 <title>Soulstitch</title>
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#000000">
 <style>
-html,body{margin:0;height:100%;background:#000;overflow:hidden}
+html,body{margin:0;height:100%;background:#000;overflow:hidden;overscroll-behavior:none}
 body{display:flex;align-items:center;justify-content:center}
-canvas{width:min(100vw,calc(100vh*16/9));aspect-ratio:16/9;cursor:crosshair;outline:none;touch-action:none;user-select:none;-webkit-user-select:none}
+canvas{width:min(100vw,calc(100vh*16/9));width:min(100vw,calc(100dvh*16/9));aspect-ratio:16/9;cursor:crosshair;outline:none;touch-action:none;user-select:none;-webkit-user-select:none}
+#fs{position:fixed;top:max(8px,env(safe-area-inset-top));right:max(8px,env(safe-area-inset-right));z-index:2;width:44px;height:44px;padding:0;border-radius:10px;border:1px solid rgba(255,255,255,.45);background:rgba(0,0,0,.45);color:#fff;font:22px/1 sans-serif;opacity:.75;touch-action:manipulation}
+.ov{position:fixed;inset:0;z-index:3;display:none;align-items:center;justify-content:center;padding:24px;background:rgba(0,0,0,.88);color:#efe6d0;font:17px/1.45 "Trebuchet MS","Segoe UI",sans-serif;text-align:center}
+.ov b{color:#7ff;font-size:22px}
+@media (orientation:portrait) and (pointer:coarse){#rot{display:flex}}
 </style>
 </head>
 <body>
 <canvas id="c" width="1280" height="720" tabindex="0"></canvas>
+<button id="fs" type="button" aria-label="Vollbild">⛶</button>
+<div id="rot" class="ov"><div><b>⟳ Handy quer halten</b><br>Soulstitch wird im Querformat gespielt.</div></div>
+<div id="fsHint" class="ov"><div><b>Kein Vollbild möglich</b><br>Dieser Browser erlaubt hier kein Vollbild.<br>Auf dem iPhone geht echtes Vollbild nur,<br>wenn das Spiel als App auf dem Home-Bildschirm liegt.<br><br>Antippen zum Schließen</div></div>
 <script>
 'use strict';
 // ====================================================================
@@ -59,7 +70,26 @@ cv.addEventListener('touchmove',e=>{e.preventDefault();
       if(!joy.up&&dy<-.7)joy.up=true;else if(joy.up&&dy>-.35)joy.up=false;jumpKey()}
     if(aimT&&t.identifier===aimT.id){aimT.x=q.x;aimT.y=q.y}
   }},{passive:false});
-const tend=e=>{for(const t of e.changedTouches){if(joy&&t.identifier===joy.id)joy=null;if(aimT&&t.identifier===aimT.id)aimT=null;if(t.identifier===jumpTouch)jumpTouch=null}jumpKey()};
+// ---------- Vollbild ----------
+const fsBtn=document.getElementById('fs'),fsHint=document.getElementById('fsHint'),root=document.documentElement;
+const fsOn=()=>!!(document.fullscreenElement||document.webkitFullscreenElement);
+async function goFull(){
+  if(fsOn())return true;
+  const req=root.requestFullscreen||root.webkitRequestFullscreen;if(!req)return false;
+  try{await req.call(root,{navigationUI:'hide'})}catch(e){return false}
+  try{await screen.orientation.lock('landscape')}catch(e){}
+  return true;
+}
+fsBtn.addEventListener('click',async()=>{
+  if(fsOn())(document.exitFullscreen||document.webkitExitFullscreen).call(document);
+  else if(!await goFull())fsHint.style.display='flex';
+  cv.focus();
+});
+fsHint.addEventListener('click',()=>fsHint.style.display='none');
+const updFs=()=>{const on=fsOn();fsBtn.textContent=on?'✕':'⛶';fsBtn.setAttribute('aria-label',on?'Vollbild beenden':'Vollbild')};
+document.addEventListener('fullscreenchange',updFs);document.addEventListener('webkitfullscreenchange',updFs);
+let fsTried=false;
+const tend=e=>{if(!fsTried){fsTried=true;goFull()}for(const t of e.changedTouches){if(joy&&t.identifier===joy.id)joy=null;if(aimT&&t.identifier===aimT.id)aimT=null;if(t.identifier===jumpTouch)jumpTouch=null}jumpKey()};
 cv.addEventListener('touchend',tend);cv.addEventListener('touchcancel',tend);
 const K=(...c)=>c.some(k=>keys.has(k)),KP=(...c)=>c.some(k=>pressed.has(k));
 
@@ -631,12 +661,12 @@ function drawFight(){
     ctx.fillStyle=i<p.hp?'#ff3858':'#3a1c22';ctx.fill();ctx.strokeStyle=OUT;ctx.lineWidth=1.4;ctx.stroke();ctx.restore()}
   rr(ctx,12,30,62,6,3);ctx.fillStyle='#182a30';ctx.fill();ctx.strokeStyle=OUT;ctx.lineWidth=1;ctx.stroke();
   const dk=clamp(1-p.dcd/st.dcd,0,1);if(dk>.1){rr(ctx,12,30,62*dk,6,3);ctx.fillStyle=dk>=1?'#5ff':'#2a8a96';ctx.fill()}
-  txt('Rekord '+save.best,W-12,8,'#b0a090','right',12);
+  txt('Rekord '+save.best,W-12,40,'#b0a090','right',12);
   if(touchMode&&phase!=='dead'){
     for(const[q,l]of[[JB,'SPRUNG'],[DB,'DASH']]){ctx.globalAlpha=.4;circ(ctx,q.x,q.y,q.r,'#fff');ctx.globalAlpha=1;ctx.strokeStyle='rgba(255,255,255,.8)';ctx.lineWidth=2;ctx.stroke();txt(l,q.x,q.y-6,'#fff','center',10,true)}
     if(joy){ctx.globalAlpha=.3;circ(ctx,joy.ox,joy.oy,30,'#fff');ctx.globalAlpha=.7;circ(ctx,joy.ox+joy.dx*26,joy.oy+(joy.up?-22:0),14,joy.up?'#ffd040':'#5ff');ctx.globalAlpha=1}
     if(aimT){ctx.strokeStyle='rgba(255,96,80,.9)';ctx.lineWidth=2;ctx.beginPath();ctx.arc(aimT.x,aimT.y,10,0,TAU);ctx.moveTo(aimT.x-15,aimT.y);ctx.lineTo(aimT.x-5,aimT.y);ctx.moveTo(aimT.x+5,aimT.y);ctx.lineTo(aimT.x+15,aimT.y);ctx.moveTo(aimT.x,aimT.y-15);ctx.lineTo(aimT.x,aimT.y-5);ctx.moveTo(aimT.x,aimT.y+5);ctx.lineTo(aimT.x,aimT.y+15);ctx.stroke()}
-    else txt('rechts tippen: dorthin schießen',W-150,248,'rgba(255,255,255,.55)','center',11,true);
+    else if(bossN===1)txt('rechts tippen: dorthin schießen',W-150,248,'rgba(255,255,255,.55)','center',11,true);
   }
   const band=c=>{ctx.fillStyle=c;ctx.fillRect(0,138,W,74)};
   if(phase==='intro'){band('rgba(0,0,0,.62)');txt('BOSS '+b.n,W/2,146,d[3],'center',14,true);txt(d[0],W/2,166,'#fff','center',30,true,true)}
