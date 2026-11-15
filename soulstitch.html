@@ -407,7 +407,7 @@ function hurtBoss(dmg){
   if(b.hp<=.001){
     b.hp=0;b.timers=[];eb=[];hz=[];phase='clear';pt=2.4;burst(b.x,b.y,60,b.def[2],240);burst(b.x,b.y,30,b.def[3],160);shake=12;
     beep(262,.1);setTimeout(()=>beep(330,.1),100);setTimeout(()=>beep(392,.25),200);
-    const gain=3+b.n+(p.hurt?0:2);save.bones+=gain;save.best=Math.max(save.best,b.n);save.run=b.n>=30?1:b.n+1;persist();
+    const gain=3+b.n+(p.hurt?0:2);save.bones+=gain;save.best=Math.max(save.best,b.n);persist();
     msg='+'+gain+' Knochen'+(p.hurt?'':' (ohne Treffer +2)');
   }
   return true;
@@ -534,8 +534,8 @@ function updFight(dt){
   pt-=dt;
   if(phase==='intro'){if(pt<=0)phase='play'}
   else if(phase==='play'){updPlayer(dt);updBoss(dt);updBullets(dt)}
-  else if(phase==='dead'){updBullets(dt);if(pt<=0){openPile('Boss '+bossN+' ('+BOSSES[bossN-1][0]+') hat deinen Körper zerstört. Zurück zu Boss 1 – Knochen und Teile bleiben.');beep(98,.5,'triangle',.08)}}
-  else if(phase==='clear'){updPlayer(dt);updBullets(dt);if(pt<=0){if(bossN>=30)state='win';else openPile('Seele befreit! '+msg+'. Näh dich neu zusammen.')}}
+  else if(phase==='dead'){updBullets(dt);if(pt<=0){openPile('Boss '+bossN+' ('+BOSSES[bossN-1][0]+') hat deinen Körper zerstört. Knochen und Teile bleiben – näh dich neu zusammen.');beep(98,.5,'triangle',.08)}}
+  else if(phase==='clear'){updPlayer(dt);updBullets(dt);if(pt<=0){if(bossN>=30)state='win';else startFight(bossN+1)}}
   for(let i=fx.length-1;i>=0;i--){const f=fx[i];f.x+=f.vx*dt;f.y+=f.vy*dt;f.life-=dt;if(f.life<=0)fx.splice(i,1)}
 }
 
@@ -773,7 +773,7 @@ function drawPile(){
   rr(ctx,GOB.x,GOB.y,GOB.w,GOB.h,8);ctx.fillStyle=pSel===7?'#3a9a84':(time*2|0)%2?'#2f7a68':'#286454';ctx.fill();
   ctx.strokeStyle=pSel===7?'#fff':OUT;ctx.lineWidth=1.6;ctx.stroke();
   txt('In die Arena',GOB.x+GOB.w/2,GOB.y+5,'#fff','center',15,true);
-  txt('Boss '+save.run+' · '+BOSSES[save.run-1][0],GOB.x+GOB.w/2,GOB.y+25,'#d8f0e8','center',10.5);
+  txt('Neuer Lauf ab Boss 1 · '+BOSSES[0][0],GOB.x+GOB.w/2,GOB.y+25,'#d8f0e8','center',10.5);
   if(!touchMode)txt('W/S · A/D · Enter',232,284,'#58706a','left',10);
 }
 function updPile(){
@@ -781,7 +781,7 @@ function updPile(){
     if(KP('KeyW','ArrowUp')){pSel=(pSel+7)%8;syncOpt();beep(300,.03)}
     if(KP('KeyS','ArrowDown')){pSel=(pSel+1)%8;syncOpt();beep(300,.03)}
     if(pSel<7&&KP('KeyD','ArrowRight','Enter','NumpadEnter','Space')){pCol=1;syncOpt();beep(360,.03)}
-    else if(pSel===7&&ok())startFight(save.run);
+    else if(pSel===7&&ok())startFight(1);
   }else{
     const n=PARTS[SLOTS[pSel].t].length;
     if(KP('KeyW','ArrowUp')){oSel=(oSel+n-1)%n;pileBuy=-1;beep(300,.03)}
@@ -792,14 +792,14 @@ function updPile(){
   if(mouse.click){const x=mouse.x,y=mouse.y;
     for(let i=0;i<7;i++)if(inR(ROW(i),x,y)){if(pSel!==i){pSel=i;syncOpt();beep(300,.03)}pCol=1}
     if(pSel<7)for(let i=0;i<PARTS[SLOTS[pSel].t].length;i++)if(inR(CARD(i),x,y)){pCol=1;actOpt(i)}
-    if(inR(GOB,x,y))startFight(save.run);
+    if(inR(GOB,x,y))startFight(1);
   }
 }
 const INTRO=[
  ['Welche Macht wohnt der Seele inne?','Welche Rolle spielt sie bei der Formung','von Identität und Körper?'],
  ['Um das zu beantworten, wurden Menschen zu Göttern –','und verfielen dem Wahnsinn.','Imperien entstanden und fielen.'],
  ['Du warst der Sohn eines solchen Gottes.','Jetzt bist du nur noch eine Seele','in einem Leichenhaus unter dem Knochenkolosseum.'],
- ['30 Gegner stehen zwischen dir und deinem Vater.','Nach jedem Kampf nähst du dich im Leichenhaufen neu zusammen.','Bezahlt wird mit den Knochen deiner Gegner.']
+ ['30 Gegner stehen zwischen dir und deinem Vater.','Stirbst du, nähst du dich im Leichenhaufen neu zusammen.','Bezahlt wird mit den Knochen deiner Gegner.']
 ];
 function drawTitle(){
   drawStage();ctx.drawImage(fgArena,0,0,W,H);ctx.fillStyle='rgba(8,5,7,.62)';ctx.fillRect(0,0,W,H);
