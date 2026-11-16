@@ -742,8 +742,8 @@ function drawFight(){
     if(sa>0){const k=clamp((deadT-.6)/4.2,0,1),sx=p.x+Math.sin(deadT*1.7)*6*k,sy=GY-14-(GY-14-70)*(1-(1-k)*(1-k));
       ctx.save();ctx.globalCompositeOperation='lighter';
       for(let i=0;i<16;i++){const ph=(time*.9+i/16)%1;ctx.globalAlpha=(1-ph)*.8*sa;
-        circ(ctx,sx+Math.sin(i*7.3+time*3)*(4+ph*10),sy+8+ph*70,(1-ph)*2.4+.6,i%3?'#58b8ff':'#c8f4ff')}
-      ctx.restore();ctx.globalAlpha=1;soulFlame(sx,sy,sa*1.15)}
+        circ(ctx,sx+Math.sin(i*7.3+time*3)*(4+ph*10),sy+36+ph*60,(1-ph)*2.4+.6,i%3?'#58b8ff':'#c8f4ff')}
+      ctx.restore();ctx.globalAlpha=1;soulFlame(sx,sy,sa*.95)}
     const ta=clamp((deadT-2.4)/.9,0,1)*clamp((4.8-deadT)/.5,0,1);
     if(ta>0){ctx.globalAlpha=ta;ctx.shadowColor='#a00';ctx.shadowBlur=26;txt('YOU DIED',W/2,128+(1-ta)*6,'#c8281c','center',58,true,true);ctx.shadowBlur=0;
       txt('Besiegt von '+d[0]+' · Boss '+bossN,W/2,204,'#8a7a70','center',13,false,true);ctx.globalAlpha=1}
@@ -769,7 +769,7 @@ function actOpt(i){
 function drawPile(){
   ctx.drawImage(bgMorgue,0,0,W,H);
   drawBody(112,264,3.4,save.eq,{run:0,dead:1});
-  const sp=soulPos();soulTrail(sp.x,sp.y,1);soulFlame(sp.x,sp.y,1.3);drawFx();
+  const sp=soulPos();soulTrail(sp.x,sp.y,1);soulFlame(sp.x,sp.y,1);drawFx();
   drawPileUI(1);
 }
 function drawPileUI(al){
@@ -832,21 +832,35 @@ function updPile(){
 }
 // ---------- Tod: Leichenfall in den Haufen ----------
 let deadT=0,fallT=0,fallHit=false;
+// Die Seele: ein Geist aus blauem Feuer (x,y = Mitte des Kopfes)
 function soulFlame(x,y,s){
-  if(s<=0)return;
-  ctx.save();ctx.globalCompositeOperation='lighter';
-  const g=ctx.createRadialGradient(x,y,0,x,y,46*s);g.addColorStop(0,'rgba(70,160,255,.5)');g.addColorStop(1,'rgba(30,80,255,0)');
-  ctx.fillStyle=g;ctx.fillRect(x-46*s,y-46*s,92*s,92*s);
-  for(const[k,col]of[[1,'rgba(40,110,255,.8)'],[.72,'rgba(80,195,255,.85)'],[.42,'rgba(215,250,255,.95)']]){
-    const w=11*s*k,h=32*s*k,sw=(Math.sin(time*9+k*4)*3+Math.sin(time*15.7+k)*1.5)*s*k;
-    ctx.beginPath();ctx.moveTo(x+sw,y-h);
-    ctx.bezierCurveTo(x+w*.5+sw*.5,y-h*.5,x+w,y-h*.15,x+w,y+w*.15);
-    ctx.arc(x,y+w*.15,w,0,Math.PI);
-    ctx.bezierCurveTo(x-w,y-h*.15,x-w*.5+sw*.5,y-h*.5,x+sw,y-h);
-    ctx.fillStyle=col;ctx.fill()}
+  if(s<=0)return;const t=time;
+  ctx.save();ctx.translate(x,y);ctx.scale(s,s);ctx.globalCompositeOperation='lighter';
+  const g=ctx.createRadialGradient(0,8,0,0,8,56);g.addColorStop(0,'rgba(70,160,255,.45)');g.addColorStop(1,'rgba(30,80,255,0)');
+  ctx.fillStyle=g;ctx.fillRect(-56,-48,112,112);
+  // Flammenzungen auf dem Kopf
+  for(const[i,dx]of[[0,-6],[1,0],[2,6]]){const h=(i===1?17:11)+Math.sin(t*11+i*2.1)*3,tip=dx*1.3+Math.sin(t*7+i)*2;
+    ctx.beginPath();ctx.moveTo(dx-4.5,-5);ctx.quadraticCurveTo(dx-4,-5-h*.6,tip,-5-h);ctx.quadraticCurveTo(dx+4,-5-h*.6,dx+4.5,-5);
+    ctx.fillStyle='rgba(60,150,255,.65)';ctx.fill();
+    ctx.beginPath();ctx.moveTo(dx-2,-5);ctx.quadraticCurveTo(dx-1.5,-5-h*.4,tip*.8,-5-h*.7);ctx.quadraticCurveTo(dx+1.5,-5-h*.4,dx+2,-5);
+    ctx.fillStyle='rgba(190,240,255,.6)';ctx.fill()}
+  // Geisterkörper mit wehendem Schweif
+  const sw=Math.sin(t*2.6)*6,w1=Math.sin(t*4.1)*1.6,w2=Math.sin(t*3.7+1)*1.6;
+  const body=()=>{ctx.beginPath();ctx.moveTo(-11,0);ctx.arc(0,0,11,Math.PI,0);
+    ctx.bezierCurveTo(11,10,9+w1,18,6+w1+sw*.3,26);ctx.bezierCurveTo(4+sw*.6,32,sw*.9+3,36,sw,43);
+    ctx.bezierCurveTo(sw*.7-3,35,-3+sw*.4,31,-6+w2+sw*.3,26);ctx.bezierCurveTo(-9+w2,18,-11,10,-11,0);ctx.closePath()};
+  for(const[k,col]of[[1,'rgba(45,120,255,.7)'],[.8,'rgba(80,190,255,.55)'],[.58,'rgba(205,246,255,.85)']]){
+    ctx.save();ctx.translate(0,3*(1-k));ctx.scale(k,k);body();ctx.fillStyle=col;ctx.fill();ctx.restore()}
+  // Nebelarme
+  for(const sd of[-1,1]){const a=Math.sin(t*3+sd)*3;ctx.beginPath();ctx.moveTo(sd*9,7);ctx.quadraticCurveTo(sd*17,8+a,sd*19,2+a);ctx.quadraticCurveTo(sd*15,12,sd*8,14);
+    ctx.fillStyle='rgba(80,180,255,.55)';ctx.fill()}
+  ctx.globalCompositeOperation='source-over';
+  // Gesicht: dunkle Augen mit Lichtpunkt, blinzelt ab und zu
+  const bl=(t%4.3)>4.15?.15:1;
+  for(const sd of[-1,1]){ctx.fillStyle='#0b1c40';ctx.beginPath();ctx.ellipse(sd*4.2,1,2.3,3.3*bl,0,0,TAU);ctx.fill();
+    if(bl>.5)circ(ctx,sd*4.2+.7,-.4,.85,'#c8f8ff')}
+  ctx.fillStyle='#0b1c40';ctx.beginPath();ctx.ellipse(0,7,1.5,1.1+Math.sin(t*2)*.3,0,0,TAU);ctx.fill();
   ctx.restore();
-  // die zwei Augen der Seele
-  ctx.shadowColor='#3ff';ctx.shadowBlur=6*s;circ(ctx,x-3.2*s,y+1.5*s,1.5*s,'#eaffff');circ(ctx,x+3.2*s,y+1.5*s,1.5*s,'#eaffff');ctx.shadowBlur=0;
 }
 function deadBody(){
   const k=clamp(deadT/.45,0,1),e=k*k,y=p.dieY+(GY-p.dieY)*e;
@@ -859,7 +873,7 @@ const chestPos=()=>({x:115,y:264-(Math.max(LEG[save.eq.beinL][0],LEG[save.eq.bei
 function soulTrail(x,y,a){
   ctx.save();ctx.globalCompositeOperation='lighter';
   for(let i=0;i<12;i++){const ph=(time*.9+i/12)%1;ctx.globalAlpha=(1-ph)*.7*a;
-    circ(ctx,x+Math.sin(i*7.3+time*3)*(4+ph*8),y+10+ph*50,(1-ph)*2.2+.5,i%3?'#58b8ff':'#c8f4ff')}
+    circ(ctx,x+Math.sin(i*7.3+time*3)*(4+ph*8),y+32+ph*42,(1-ph)*2.2+.5,i%3?'#58b8ff':'#c8f4ff')}
   ctx.restore();ctx.globalAlpha=1;
 }
 function updFx(dt){for(let i=fx.length-1;i>=0;i--){const f=fx[i];if(f.g)f.vy+=f.g*dt;f.x+=f.vx*dt;f.y+=f.vy*dt;f.life-=dt;if(f.life<=0)fx.splice(i,1)}}
@@ -877,7 +891,7 @@ function drawFall(){
   ctx.drawImage(bgMorgue,0,0,W,H);
   drawBody(112,264,3.4,save.eq,{run:0,dead:1});
   const x=113+(sp.x-113)*e+Math.sin(t*2.4)*14*(1-e),y=-40+(sp.y+40)*e;
-  soulTrail(x,y,1);soulFlame(x,y,1.3);
+  soulTrail(x,y,1);soulFlame(x,y,1);
   const bl=1-clamp(t/.7,0,1);if(bl>0){ctx.fillStyle='rgba(0,0,0,'+bl+')';ctx.fillRect(0,0,W,H)}
   if(t>UI-.4)drawPileUI(clamp((t-UI+.4)/.45,0,1));
 }
@@ -895,7 +909,7 @@ function drawPossess(){
   const t=posT,c=chestPos();
   ctx.drawImage(bgMorgue,0,0,W,H);
   drawBody(112,264,3.4,save.eq,{run:0,dead:t<.75});
-  if(t<.75){const k=clamp(t/.75,0,1),e=k*k,x=posFrom.x+(c.x-posFrom.x)*e,y=posFrom.y+(c.y-posFrom.y)*e;soulTrail(x,y,1-k);soulFlame(x,y,1.3*(1-k*.6))}
+  if(t<.75){const k=clamp(t/.75,0,1),e=k*k,x=posFrom.x+(c.x-posFrom.x)*e,y=posFrom.y+(c.y-posFrom.y)*e;soulTrail(x,y,1-k);soulFlame(x,y,1-k*.6)}
   else{const f=clamp(1-(t-.75)/.35,0,1);if(f>0){ctx.save();ctx.globalCompositeOperation='lighter';const g=ctx.createRadialGradient(c.x,c.y,0,c.x,c.y,140);
     g.addColorStop(0,'rgba(140,220,255,'+f+')');g.addColorStop(1,'rgba(40,120,255,0)');ctx.fillStyle=g;ctx.fillRect(0,0,W,H);ctx.restore()}}
   drawFx();
