@@ -214,13 +214,13 @@ function drawBody(x,y,s,eq,o={}){
     ctx.moveTo(-tw/2+1,hip-th+1.5);ctx.lineTo(-tw/2+3,hip-th+3.5);ctx.moveTo(-tw/2+3,hip-th+1.5);ctx.lineTo(-tw/2+1,hip-th+3.5);
     if(t.id==='b1')for(let i=0;i<3;i++){ctx.moveTo(-tw/2+1,hip-th+5+i*3);ctx.lineTo(tw/2-1,hip-th+5+i*3)}
     ctx.lineWidth=.7;ctx.stroke();
-    ctx.shadowColor=h.col;ctx.shadowBlur=6;circ(ctx,1,hip-th+6,1.9,h.col);ctx.shadowBlur=0;
+    if(o.dead)circ(ctx,1,hip-th+6,1.6,'#3a2626');else{ctx.shadowColor=h.col;ctx.shadowBlur=6;circ(ctx,1,hip-th+6,1.9,h.col);ctx.shadowBlur=0}
   }
   // Kopf
   const head=(cx,cy,r)=>{ctx.beginPath();ctx.arc(cx,cy,r,0,TAU);ctx.fillStyle=C(k.col);ctx.fill();
     if(!fl){const g=ctx.createRadialGradient(cx+r*.3,cy-r*.4,r*.2,cx,cy,r);g.addColorStop(0,'rgba(255,255,255,.3)');g.addColorStop(1,'rgba(0,0,0,.28)');ctx.fillStyle=g;ctx.fill()}
     ctx.strokeStyle=OUT;ctx.lineWidth=1.2;ctx.stroke()};
-  const eye=(cx,cy,r)=>{if(fl)return;ctx.shadowColor='#3ff';ctx.shadowBlur=5;circ(ctx,cx,cy,r,'#5ff');ctx.shadowBlur=0};
+  const eye=(cx,cy,r)=>{if(fl)return;if(o.dead){circ(ctx,cx,cy,r*.9,'#1a1416');return}ctx.shadowColor='#3ff';ctx.shadowBlur=5;circ(ctx,cx,cy,r,'#5ff');ctx.shadowBlur=0};
   const teeth=()=>{if(fl)return;ctx.beginPath();ctx.moveTo(1.5,hy+3.6);ctx.lineTo(5.5,hy+3.6);ctx.moveTo(2.5,hy+2.8);ctx.lineTo(2.5,hy+4.4);ctx.moveTo(4.2,hy+2.8);ctx.lineTo(4.2,hy+4.4);ctx.lineWidth=.6;ctx.strokeStyle=OUT;ctx.stroke()};
   if(k.id==='k3'){head(-4,hy+1.5,5);head(4.5,hy-1,5.2);eye(-2,hy+1,1.3);eye(6.5,hy-1.5,1.4)}
   else if(k.id==='k2'){
@@ -754,21 +754,22 @@ let pSel=0,pCol=0,oSel=0,pileMsg='',pileBuy=-1;
 const ROW=i=>({x:232,y:62+i*31,w:178,h:28}),CARD=i=>({x:420,y:62+i*50,w:210,h:46}),GOB={x:420,y:302,w:210,h:44};
 const inR=(r,x,y)=>x>=r.x&&x<=r.x+r.w&&y>=r.y&&y<=r.y+r.h;
 const pct=v=>Math.round(v*100)+' %';
-function openPile(m){state='pile';pileMsg=m;pCol=0;pSel=Math.min(pSel,6);syncOpt()}
+function openPile(m){state='pile';fx=[];pileMsg=m;pCol=0;pSel=Math.min(pSel,6);syncOpt()}
 function syncOpt(){if(pSel<7){oSel=PARTS[SLOTS[pSel].t].findIndex(q=>q.id===save.eq[SLOTS[pSel].k])}pileBuy=-1}
 function actOpt(i){
   const sl=SLOTS[pSel],q=PARTS[sl.t][i];
   if(save.eq[sl.k]===q.id){oSel=i;pileBuy=-1;return}
-  if(canEquip(sl,q)){oSel=i;pileBuy=-1;save.eq[sl.k]=q.id;persist();beep(520,.06);return}
+  if(canEquip(sl,q)){oSel=i;pileBuy=-1;save.eq[sl.k]=q.id;persist();beep(520,.06);stitchFx();return}
   if(pileBuy!==i){oSel=i;pileBuy=i;beep(300,.03);return}   // erstes Antippen: nur auswählen
   if(save.bones>=q.p){
-    save.bones-=q.p;save.own[q.id]=(save.own[q.id]|0)+1;save.eq[sl.k]=q.id;persist();pileBuy=-1;
+    save.bones-=q.p;save.own[q.id]=(save.own[q.id]|0)+1;save.eq[sl.k]=q.id;persist();pileBuy=-1;stitchFx();
     beep(523,.08);setTimeout(()=>beep(784,.12),80);
   }else beep(110,.2,'sawtooth');
 }
 function drawPile(){
   ctx.drawImage(bgMorgue,0,0,W,H);
-  drawBody(112,264+Math.sin(time*2),3.4,save.eq,{run:0});
+  drawBody(112,264,3.4,save.eq,{run:0,dead:1});
+  const sp=soulPos();soulTrail(sp.x,sp.y,1);soulFlame(sp.x,sp.y,1.3);drawFx();
   drawPileUI(1);
 }
 function drawPileUI(al){
@@ -815,7 +816,7 @@ function updPile(){
     if(KP('KeyW','ArrowUp')){pSel=(pSel+7)%8;syncOpt();beep(300,.03)}
     if(KP('KeyS','ArrowDown')){pSel=(pSel+1)%8;syncOpt();beep(300,.03)}
     if(pSel<7&&KP('KeyD','ArrowRight','Enter','NumpadEnter','Space')){pCol=1;syncOpt();beep(360,.03)}
-    else if(pSel===7&&ok())startFight(1);
+    else if(pSel===7&&ok())startPossess();
   }else{
     const n=PARTS[SLOTS[pSel].t].length;
     if(KP('KeyW','ArrowUp')){oSel=(oSel+n-1)%n;pileBuy=-1;beep(300,.03)}
@@ -826,7 +827,7 @@ function updPile(){
   if(mouse.click){const x=mouse.x,y=mouse.y;
     for(let i=0;i<7;i++)if(inR(ROW(i),x,y)){if(pSel!==i){pSel=i;syncOpt();beep(300,.03)}pCol=1}
     if(pSel<7)for(let i=0;i<PARTS[SLOTS[pSel].t].length;i++)if(inR(CARD(i),x,y)){pCol=1;actOpt(i)}
-    if(inR(GOB,x,y))startFight(1);
+    if(inR(GOB,x,y))startPossess();
   }
 }
 // ---------- Tod: Leichenfall in den Haufen ----------
@@ -851,28 +852,55 @@ function deadBody(){
   const k=clamp(deadT/.45,0,1),e=k*k,y=p.dieY+(GY-p.dieY)*e;
   ctx.save();ctx.translate(p.x,y-3*e);ctx.rotate(-Math.PI/2*e*p.f);drawBody(0,0,1,save.eq,{f:p.f,aim:p.aim});ctx.restore();
 }
-function startFall(m){openPile(m);state='fall';fallT=0;fallHit=false;fx=[];beep(500,1,'sine',.04,-420)}
-const LAND=1.35,RISE=2.5,UI=2.9;
+// Nach dem Tod sinkt die Seele durch den Schacht zum Leichenhaufen und sucht sich dort einen Körper aus
+const SOUL={x:180,y:180},UI=2.4;
+const soulPos=()=>({x:SOUL.x+Math.sin(time*1.3)*4,y:SOUL.y+Math.sin(time*2.1)*5});
+const chestPos=()=>({x:115,y:264-(Math.max(LEG[save.eq.beinL][0],LEG[save.eq.beinR][0])+6.5)*3.4});
+function soulTrail(x,y,a){
+  ctx.save();ctx.globalCompositeOperation='lighter';
+  for(let i=0;i<12;i++){const ph=(time*.9+i/12)%1;ctx.globalAlpha=(1-ph)*.7*a;
+    circ(ctx,x+Math.sin(i*7.3+time*3)*(4+ph*8),y+10+ph*50,(1-ph)*2.2+.5,i%3?'#58b8ff':'#c8f4ff')}
+  ctx.restore();ctx.globalAlpha=1;
+}
+function updFx(dt){for(let i=fx.length-1;i>=0;i--){const f=fx[i];if(f.g)f.vy+=f.g*dt;f.x+=f.vx*dt;f.y+=f.vy*dt;f.life-=dt;if(f.life<=0)fx.splice(i,1)}}
+function drawFx(){ctx.save();ctx.globalCompositeOperation='lighter';for(const f of fx){ctx.globalAlpha=clamp(f.life*3,0,1);circ(ctx,f.x,f.y,f.r,f.col)}ctx.restore();ctx.globalAlpha=1}
+// Seele näht ein Teil an: blaue Funken fliegen von der Seele zum Körper
+function stitchFx(){const sp=soulPos(),c=chestPos();
+  for(let i=0;i<18;i++){const t=rnd(.35,.6);fx.push({x:sp.x,y:sp.y,vx:(c.x-sp.x)/t+rnd(-40,40),vy:(c.y-sp.y)/t+rnd(-40,40),life:t,col:i%2?'#58b8ff':'#c8f4ff',r:rnd(1.2,2.4)})}}
+function startFall(m){openPile(m);state='fall';fallT=0;fx=[];beep(700,2,'sine',.035,-500)}
 function updFall(dt){
-  fallT+=dt;if(shake>0)shake=Math.max(0,shake-dt*24);
-  if(!fallHit&&fallT>=LAND){fallHit=true;shake=10;beep(55,.45,'sawtooth',.1);beep(95,.3,'triangle',.09);
-    for(let i=0;i<4;i++)setTimeout(()=>beep(rnd(700,1100),.04,'square',.025),60+i*55);
-    for(let i=0;i<26;i++){const a=-Math.PI*rnd(.05,.95),s=rnd(40,170);fx.push({x:112+rnd(-50,50),y:262,vx:Math.cos(a)*s,vy:Math.sin(a)*s,g:300,life:rnd(.4,.9),col:i%3?'#a89a80':'#5a4a40',r:rnd(1.5,3)})}}
-  for(let i=fx.length-1;i>=0;i--){const f=fx[i];if(f.g)f.vy+=f.g*dt;f.x+=f.vx*dt;f.y+=f.vy*dt;f.life-=dt;if(f.life<=0)fx.splice(i,1)}
+  fallT+=dt;updFx(dt);
   if(fallT>UI+.5||(fallT>.8&&(ok()||mouse.click)))state='pile';
 }
 function drawFall(){
-  const t=fallT,s=3.4;let cx,cy,r;
-  ctx.save();if(shake>0)ctx.translate(rnd(-shake,shake)*.6,rnd(-shake,shake)*.6);
+  const t=fallT,k=clamp(t/2.1,0,1),e=k*k*(3-2*k),sp=soulPos();
   ctx.drawImage(bgMorgue,0,0,W,H);
-  if(t<LAND){const k=clamp((t-.2)/(LAND-.2),0,1);cx=150-38*k;cy=-120+(240+120)*k*k;r=-(Math.PI/2+TAU)*k}
-  else if(t<RISE){cx=112;cy=240;r=-Math.PI/2}
-  else{const k=clamp((t-RISE)/.45,0,1),e=k*k*(3-2*k);cx=112;cy=240+(264-20*s-240)*e;r=-Math.PI/2*(1-e)}
-  ctx.translate(cx,cy);ctx.rotate(r);drawBody(0,20*s,s,save.eq,{run:0,air:t<LAND});ctx.setTransform(cv.width/W,0,0,cv.height/H,0,0);
-  for(const f of fx){ctx.globalAlpha=clamp(f.life*3,0,1);circ(ctx,f.x,f.y,f.r,f.col)}ctx.globalAlpha=1;
-  ctx.restore();
+  drawBody(112,264,3.4,save.eq,{run:0,dead:1});
+  const x=113+(sp.x-113)*e+Math.sin(t*2.4)*14*(1-e),y=-40+(sp.y+40)*e;
+  soulTrail(x,y,1);soulFlame(x,y,1.3);
   const bl=1-clamp(t/.7,0,1);if(bl>0){ctx.fillStyle='rgba(0,0,0,'+bl+')';ctx.fillRect(0,0,W,H)}
-  if(t>UI)drawPileUI(clamp((t-UI)/.45,0,1));
+  if(t>UI-.4)drawPileUI(clamp((t-UI+.4)/.45,0,1));
+}
+// Seele fährt in den gewählten Körper, dann beginnt der Lauf
+let posT=0,posFrom=null,posHit=false;
+function startPossess(){state='possess';posT=0;posFrom=soulPos();posHit=false;beep(330,.7,'sine',.04,500)}
+function updPossess(dt){
+  posT+=dt;updFx(dt);
+  if(!posHit&&posT>=.75){posHit=true;const c=chestPos();
+    for(let i=0;i<30;i++){const a=rnd(TAU),v=rnd(40,160);fx.push({x:c.x,y:c.y,vx:Math.cos(a)*v,vy:Math.sin(a)*v,life:rnd(.3,.7),col:i%2?'#58b8ff':'#e0ffff',r:rnd(1.5,3)})}
+    beep(523,.12);setTimeout(()=>beep(784,.18),90);setTimeout(()=>beep(1046,.3,'triangle',.05),180)}
+  if(posT>=1.7){fx=[];startFight(1)}
+}
+function drawPossess(){
+  const t=posT,c=chestPos();
+  ctx.drawImage(bgMorgue,0,0,W,H);
+  drawBody(112,264,3.4,save.eq,{run:0,dead:t<.75});
+  if(t<.75){const k=clamp(t/.75,0,1),e=k*k,x=posFrom.x+(c.x-posFrom.x)*e,y=posFrom.y+(c.y-posFrom.y)*e;soulTrail(x,y,1-k);soulFlame(x,y,1.3*(1-k*.6))}
+  else{const f=clamp(1-(t-.75)/.35,0,1);if(f>0){ctx.save();ctx.globalCompositeOperation='lighter';const g=ctx.createRadialGradient(c.x,c.y,0,c.x,c.y,140);
+    g.addColorStop(0,'rgba(140,220,255,'+f+')');g.addColorStop(1,'rgba(40,120,255,0)');ctx.fillStyle=g;ctx.fillRect(0,0,W,H);ctx.restore()}}
+  drawFx();
+  const ui=clamp(1-t/.3,0,1);if(ui>0)drawPileUI(ui);
+  const bl=clamp((t-1.2)/.5,0,1);if(bl>0){ctx.fillStyle='rgba(0,0,0,'+bl+')';ctx.fillRect(0,0,W,H)}
 }
 const INTRO=[
  ['Welche Macht wohnt der Seele inne?','Welche Rolle spielt sie bei der Formung','von Identität und Körper?'],
@@ -908,7 +936,8 @@ function update(dt){
   time+=dt;if(shake>0)shake=Math.max(0,shake-dt*24);
   if(state==='title'){if(ok()||mouse.click){state='intro';introLine=0;beep(440,.1)}}
   else if(state==='intro'){if(ok()||mouse.click){beep(440,.06);if(++introLine>=INTRO.length)openPile('Deine Seele braucht einen Körper. Näh dir einen zusammen.')}}
-  else if(state==='pile')updPile();
+  else if(state==='pile'){updPile();updFx(dt)}
+  else if(state==='possess')updPossess(dt);
   else if(state==='fall')updFall(dt);
   else if(state==='fight')updFight(dt);
   else if(state==='win'){if(ok()||mouse.click)openPile('Der Vater ist gefallen. Ein neuer Lauf beginnt bei Boss 1.')}
@@ -916,7 +945,7 @@ function update(dt){
 }
 function draw(){
   ctx.setTransform(cv.width/W,0,0,cv.height/H,0,0);
-  if(state==='fight')drawFight();else if(state==='pile')drawPile();else if(state==='fall')drawFall();else if(state==='win')drawWin();else drawTitle();
+  if(state==='fight')drawFight();else if(state==='pile')drawPile();else if(state==='fall')drawFall();else if(state==='possess')drawPossess();else if(state==='win')drawWin();else drawTitle();
 }
 let last=performance.now();
 function loop(now){
