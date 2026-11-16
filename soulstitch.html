@@ -534,7 +534,7 @@ function updFight(dt){
   pt-=dt;
   if(phase==='intro'){if(pt<=0)phase='play'}
   else if(phase==='play'){updPlayer(dt);updBoss(dt);updBullets(dt)}
-  else if(phase==='dead'){deadT+=dt;updBullets(dt);if(deadT>=2.4&&deadT-dt<2.4){beep(73,1.6,'triangle',.1);beep(110,1.2,'sine',.05,-30)}
+  else if(phase==='dead'){deadT+=dt;updBullets(dt);if(deadT>=.6&&deadT-dt<.6){beep(260,2.2,'sine',.045,520);beep(392,2,'triangle',.02,700)}if(deadT>=2.4&&deadT-dt<2.4){beep(73,1.6,'triangle',.1);beep(110,1.2,'sine',.05,-30)}
     if(deadT>=4.8)startFall('Boss '+bossN+' ('+BOSSES[bossN-1][0]+') hat deinen Körper zerstört. Knochen und Teile bleiben – näh dich neu zusammen.')}
   else if(phase==='clear'){updPlayer(dt);updBullets(dt);if(pt<=0){if(bossN>=30)state='win';else startFight(bossN+1)}}
   for(let i=fx.length-1;i>=0;i--){const f=fx[i];f.x+=f.vx*dt;f.y+=f.vy*dt;f.life-=dt;if(f.life<=0)fx.splice(i,1)}
@@ -737,7 +737,13 @@ function drawFight(){
   if(phase==='dead'){
     // alles außer der Leiche versinkt im Schwarz, dann YOU DIED
     const a=clamp((deadT-.5)/1.8,0,1);ctx.fillStyle='rgba(0,0,0,'+a+')';ctx.fillRect(0,0,W,H);
-    if(a>0)deadBody();
+    // nur die Seele steigt aus der Leiche auf, als bläulich leuchtende Flamme
+    const sa=clamp((deadT-.5)/.6,0,1);
+    if(sa>0){const k=clamp((deadT-.6)/4.2,0,1),sx=p.x+Math.sin(deadT*1.7)*6*k,sy=GY-14-(GY-14-70)*(1-(1-k)*(1-k));
+      ctx.save();ctx.globalCompositeOperation='lighter';
+      for(let i=0;i<16;i++){const ph=(time*.9+i/16)%1;ctx.globalAlpha=(1-ph)*.8*sa;
+        circ(ctx,sx+Math.sin(i*7.3+time*3)*(4+ph*10),sy+8+ph*70,(1-ph)*2.4+.6,i%3?'#58b8ff':'#c8f4ff')}
+      ctx.restore();ctx.globalAlpha=1;soulFlame(sx,sy,sa*1.15)}
     const ta=clamp((deadT-2.4)/.9,0,1)*clamp((4.8-deadT)/.5,0,1);
     if(ta>0){ctx.globalAlpha=ta;ctx.shadowColor='#a00';ctx.shadowBlur=26;txt('YOU DIED',W/2,128+(1-ta)*6,'#c8281c','center',58,true,true);ctx.shadowBlur=0;
       txt('Besiegt von '+d[0]+' · Boss '+bossN,W/2,204,'#8a7a70','center',13,false,true);ctx.globalAlpha=1}
@@ -825,6 +831,22 @@ function updPile(){
 }
 // ---------- Tod: Leichenfall in den Haufen ----------
 let deadT=0,fallT=0,fallHit=false;
+function soulFlame(x,y,s){
+  if(s<=0)return;
+  ctx.save();ctx.globalCompositeOperation='lighter';
+  const g=ctx.createRadialGradient(x,y,0,x,y,46*s);g.addColorStop(0,'rgba(70,160,255,.5)');g.addColorStop(1,'rgba(30,80,255,0)');
+  ctx.fillStyle=g;ctx.fillRect(x-46*s,y-46*s,92*s,92*s);
+  for(const[k,col]of[[1,'rgba(40,110,255,.8)'],[.72,'rgba(80,195,255,.85)'],[.42,'rgba(215,250,255,.95)']]){
+    const w=11*s*k,h=32*s*k,sw=(Math.sin(time*9+k*4)*3+Math.sin(time*15.7+k)*1.5)*s*k;
+    ctx.beginPath();ctx.moveTo(x+sw,y-h);
+    ctx.bezierCurveTo(x+w*.5+sw*.5,y-h*.5,x+w,y-h*.15,x+w,y+w*.15);
+    ctx.arc(x,y+w*.15,w,0,Math.PI);
+    ctx.bezierCurveTo(x-w,y-h*.15,x-w*.5+sw*.5,y-h*.5,x+sw,y-h);
+    ctx.fillStyle=col;ctx.fill()}
+  ctx.restore();
+  // die zwei Augen der Seele
+  ctx.shadowColor='#3ff';ctx.shadowBlur=6*s;circ(ctx,x-3.2*s,y+1.5*s,1.5*s,'#eaffff');circ(ctx,x+3.2*s,y+1.5*s,1.5*s,'#eaffff');ctx.shadowBlur=0;
+}
 function deadBody(){
   const k=clamp(deadT/.45,0,1),e=k*k,y=p.dieY+(GY-p.dieY)*e;
   ctx.save();ctx.translate(p.x,y-3*e);ctx.rotate(-Math.PI/2*e*p.f);drawBody(0,0,1,save.eq,{f:p.f,aim:p.aim});ctx.restore();
