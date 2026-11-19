@@ -5,12 +5,14 @@ import { TAU, rnd, clamp, inR, pct } from '../core/util.ts';
 import { G } from '../core/state.ts';
 import { beep } from '../core/audio.ts';
 import { KP, ok, mouse, touch } from '../core/input.ts';
-import { txt, rr } from '../render/draw.ts';
-import { drawBody, LEG } from '../render/body.ts';
+import { txt, ptxt, rr } from '../render/draw.ts';
+import { drawBody, legLength } from '../render/body.ts';
 import { bg, shaftEmbers } from '../render/backgrounds.ts';
 import { soulFlame, soulTrail, updFx, drawFx } from '../render/soul.ts';
 import { PARTS, PART, SLOTS, BALANCE, RUN_FIGHTS, fightName } from '../data/index.ts';
-import { prof, persist, stats, bonesTxt } from '../game/profile.ts';
+import { prof, persist, stats, bonesTxt, activeAbilities } from '../game/profile.ts';
+import { ABILITY_IDS } from '../game/constants.ts';
+import type { AbilityId } from '../game/constants.ts';
 import { canEquip, owned, reach } from '../game/stats.ts';
 import { go } from '../game/scenes.ts';
 import type { Scene } from '../game/scenes.ts';
@@ -19,7 +21,15 @@ import { startRun, fightsFrom, TEST_FIGHTS } from '../game/run.ts';
 // ---------- Leichenhaufen: Körperteile tauschen und kaufen ----------
 let pSel=0,pCol=0,oSel=0,pileMsg='',pileBuy=-1;
 /** Bildschirmbereiche: Plätze, Teile-Karten, Arena-Knopf */
-const ROW=(i:number)=>({x:232,y:62+i*31,w:178,h:28}),CARD=(i:number)=>({x:420,y:62+i*50,w:210,h:46}),GOB={x:420,y:302,w:210,h:44};
+const ROW=(i:number)=>({x:232,y:62+i*31,w:178,h:28}),CARD=(i:number)=>({x:420,y:62+i*44,w:210,h:42}),GOB={x:420,y:302,w:210,h:44};
+/** Fähigkeiten-Chips links unten */
+const CHIP=(i:number)=>({x:14+i*70,y:282,w:64,h:20});
+const ARCH:Record<AbilityId,{n:string;icon:string;col:string}>={block:{n:'Block',icon:'⛨',col:'#e8c060'},jump:{n:'Sprung',icon:'⤒',col:'#7ad07a'},dodge:{n:'Dash',icon:'»',col:'#6fd8ff'}};
+/** Fähigkeit vorziehen: sie wird bevorzugt aktiv (bei Limit 1: die einzige) */
+function pickAbility(id:AbilityId){
+  if(stats().lvl[id]===0){beep(110,.15,'sawtooth');return}
+  prof.save.sel=[id,...prof.save.sel.filter(x=>x!==id)];persist();beep(600,.06,'triangle',.05,200);stitchFx();
+}
 function resetPile(m:string){G.fx.length=0;pileMsg=m;pCol=0;pSel=Math.min(pSel,6);syncOpt()}
 function syncOpt(){if(pSel<7){oSel=PARTS[SLOTS[pSel].t].findIndex(q=>q.id===prof.save.eq[SLOTS[pSel].k])}pileBuy=-1}
 function actOpt(i){
@@ -44,11 +54,17 @@ function drawPileUI(al:number){
   if(prof.test)txt('TESTMODUS',212,16,'#ffb040','left',13,true);
   txt('☠ '+bonesTxt()+' Knochen',W-58,12,'#f0e0b0','right',17,true);
   txt(pileMsg,14,40,'#d0c8b0','left',12);
-  const s=stats();
-  rr(ctx,8,300,214,52,6);ctx.fillStyle='rgba(16,10,12,.8)';ctx.fill();
-  txt('Herzen '+s.hp+'   Tempo '+pct(s.speed/BALANCE.player.speed)+'   Schlag '+pct(s.fr),16,307,'#8fe6ff','left',11,true);
-  txt('Schaden '+pct(s.dmg)+'   Reichweite '+pct(reach(s)),16,323,'#8fe6ff','left',11,true);
-  txt('Dash '+pct(BALANCE.player.dashCooldown/s.dcd)+'   Sprung '+pct(s.jmp)+(s.dbl?' ×2':''),16,339,'#8fe6ff','left',11,true);
+  const s=stats(),act=activeAbilities(s);
+  rr(ctx,8,266,214,86,6);ctx.fillStyle='rgba(16,10,12,.82)';ctx.fill();
+  txt('FÄHIGKEITEN · '+act.length+' von '+prof.save.limit+' aktiv',16,269,'#9a8a80','left',9,true);
+  ABILITY_IDS.forEach((id,i)=>{const r=CHIP(i),a=ARCH[id],lv=s.lvl[id],on=act.includes(id);
+    rr(ctx,r.x,r.y,r.w,r.h,6);ctx.fillStyle=on?a.col:lv?'rgba(255,255,255,.06)':'rgba(0,0,0,.3)';ctx.fill();
+    ctx.strokeStyle=lv?a.col:'rgba(255,255,255,.12)';ctx.lineWidth=on?2:1.2;ctx.stroke();
+    const label=a.icon+' '+a.n+(lv===2?' II':lv?'':' '+s.arch[id]+'/'+BALANCE.archetype.level1);
+    if(on)ptxt(label,r.x+r.w/2,r.y+5,'#140e10','center',10,true);else txt(label,r.x+r.w/2,r.y+4,lv?a.col:'#6e625c','center',10,true)});
+  txt('Herzen '+s.hp+'   Tempo '+pct(s.speed/BALANCE.player.speed)+'   Sprung '+pct(s.jmp),16,307,'#8fe6ff','left',10.5,true);
+  txt('Schaden '+pct(s.dmg)+'   Schlag '+pct(s.fr)+'   Reichweite '+pct(reach(s)),16,322,'#8fe6ff','left',10.5,true);
+  txt('Größe '+s.size+' · Gewicht '+s.weight+(s.lvl.jump===2?' · Doppelsprung':s.lvl.block===2?' · leichte Parade':s.lvl.dodge===2?' · schneller Dash':''),16,337,'#9a8a80','left',10,true);
   // Plätze
   SLOTS.forEach((sl,i)=>{const r=ROW(i),sel=i===pSel,q=PART[prof.save.eq[sl.k]];
     rr(ctx,r.x,r.y,r.w,r.h,5);ctx.fillStyle=sel?'rgba(110,210,255,.22)':'rgba(0,0,0,.35)';ctx.fill();
@@ -60,23 +76,25 @@ function drawPileUI(al:number){
     PARTS[sl.t].forEach((q,i)=>{const r=CARD(i),on=prof.save.eq[sl.k]===q.id,ce=canEquip(prof.save,sl,q),sel=i===oSel&&pCol===1||i===pileBuy;
       rr(ctx,r.x,r.y,r.w,r.h,6);ctx.fillStyle=on?'rgba(90,200,255,.18)':sel?'rgba(255,216,120,.16)':'rgba(0,0,0,.4)';ctx.fill();
       if(on||sel){ctx.strokeStyle=on?'#5ff':'#ffd878';ctx.lineWidth=1.3;ctx.stroke()}
-      ctx.fillStyle=q.col;ctx.fillRect(r.x+6,r.y+7,4,32);
-      txt(q.n,r.x+16,r.y+5,'#fff','left',12,true);
-      txt(q.d,r.x+16,r.y+24,'#d0c8b0','left',10);
+      ctx.fillStyle=q.col;ctx.fillRect(r.x+6,r.y+6,4,30);
+      txt(q.n,r.x+16,r.y+3,'#fff','left',12,true);
+      txt(q.d,r.x+16,r.y+17,'#d0c8b0','left',9.5);
+      const tag=(q.arch?ARCH[q.arch].icon+' '+ARCH[q.arch].n+' +'+(q.pts||1)+'   ':'')+'Größe '+q.size+' · Gewicht '+q.weight;
+      txt(tag,r.x+16,r.y+29,q.arch?ARCH[q.arch].col:'#8a7a70','left',9,true);
       const n=owned(prof.save,q.id),stt=on?['ANGELEGT','#5ff']:ce?['anlegen','#8fe6ff']:['☠ '+q.p+(pair&&n===1?' (2.)':''),prof.save.bones>=q.p?'#ffd878':'#ff6050'];
-      txt(stt[0],r.x+r.w-8,r.y+6,stt[1],'right',10,true)});
+      txt(stt[0],r.x+r.w-8,r.y+4,stt[1],'right',10,true)});
   }
   const hint=(()=>{if(pSel>=7)return'';const sl=SLOTS[pSel],q=PARTS[sl.t][pileBuy];
     if(q)return prof.save.bones>=q.p?'Nochmal antippen: für '+q.p+' Knochen kaufen':'Zu wenig Knochen ('+prof.save.bones+'/'+q.p+')';
     return sl.t==='arm'||sl.t==='bein'?'Wirkt pro '+(sl.t==='arm'?'Arm':'Bein')+', zwei gleiche verdoppeln.':'Antippen: anlegen oder kaufen'})();
-  txt(hint,W-14,268,pileBuy>=0?'#ffd878':'#9a8a80','right',10.5,pileBuy>=0);
+  txt(hint,W-14,285,pileBuy>=0?'#ffd878':'#9a8a80','right',10,pileBuy>=0);
   // Kampf-Knopf
   rr(ctx,GOB.x,GOB.y,GOB.w,GOB.h,8);ctx.fillStyle=pSel===7?'#2f7f9c':(G.time*2|0)%2?'#24627a':'#1d5266';ctx.fill();
   ctx.strokeStyle=pSel===7?'#fff':OUT;ctx.lineWidth=1.6;ctx.stroke();
   txt('In die Arena',GOB.x+GOB.w/2,GOB.y+5,'#fff','center',15,true);
   txt(prof.test?testLabel():'Neuer Lauf · '+RUN_FIGHTS.length+' Kämpfe',GOB.x+GOB.w/2,GOB.y+25,'#d8f4ff','center',prof.test?9.5:10.5);
   if(prof.test){txt('‹',GOB.x+14,GOB.y+8,'#ffd878','center',24,true);txt('›',GOB.x+GOB.w-14,GOB.y+8,'#ffd878','center',24,true)}
-  if(!touch.mode)txt('W/S · A/D · Enter',232,284,'#6e625c','left',10);
+  if(!touch.mode)txt('W/S · A/D · Enter · 1–3: Fähigkeit',232,284,'#6e625c','left',10);
   ctx.globalAlpha=1;
 }
 function updPile(){
@@ -93,7 +111,9 @@ function updPile(){
     if(ok())actOpt(oSel);
     if(KP('KeyA','ArrowLeft','Escape')){pCol=0;syncOpt();beep(250,.03)}
   }
+  for(const [k,i] of [['Digit1',0],['Digit2',1],['Digit3',2]] as [string,number][])if(KP(k))pickAbility(ABILITY_IDS[i]);
   if(mouse.click){const x=mouse.x,y=mouse.y;
+    ABILITY_IDS.forEach((id,i)=>{if(inR(CHIP(i),x,y))pickAbility(id)});
     for(let i=0;i<7;i++)if(inR(ROW(i),x,y)){if(pSel!==i){pSel=i;syncOpt();beep(300,.03)}pCol=1}
     if(pSel<7)for(let i=0;i<PARTS[SLOTS[pSel].t].length;i++)if(inR(CARD(i),x,y)){pCol=1;actOpt(i)}
     if(inR(GOB,x,y)){
@@ -111,7 +131,7 @@ function testLabel(){const f=TEST_FIGHTS[prof.testFight];return (f.kind==='boss'
 const SOUL={x:180,y:180},UI=2.4;
 let fallT=0;
 const soulPos=()=>({x:SOUL.x+Math.sin(G.time*1.3)*4,y:SOUL.y+Math.sin(G.time*2.1)*5});
-const chestPos=()=>({x:115,y:264-(Math.max(LEG[prof.save.eq.beinL][0],LEG[prof.save.eq.beinR][0])+6.5)*3.4});
+const chestPos=()=>({x:115,y:264-(legLength(prof.save.eq)+6.5)*3.4});
 
 // Seele näht ein Teil an: blaue Funken fliegen von der Seele zum Körper
 function stitchFx(){const sp=soulPos(),c=chestPos();

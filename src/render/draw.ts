@@ -12,6 +12,11 @@ export function txt(s:string,x:number,y:number,col='#efe6d0',al:CanvasTextAlign=
   ctx.strokeStyle='rgba(10,6,8,.85)';ctx.lineWidth=Math.max(2.5,sz*.2);ctx.strokeText(s,x,y);
   ctx.fillStyle=col;ctx.fillText(s,x,y);
 }
+/** Text ohne Kontur, z. B. dunkle Schrift auf hellen Flächen */
+export function ptxt(s:string,x:number,y:number,col:string,al:CanvasTextAlign='left',sz=13,bold=false){
+  ctx.font=(bold?'bold ':'')+sz+'px "Trebuchet MS","Segoe UI",Verdana,sans-serif';
+  ctx.textAlign=al;ctx.textBaseline='top';ctx.fillStyle=col;ctx.fillText(s,x,y);
+}
 export function circ(g:G2D,x:number,y:number,r:number,fill:string|CanvasGradient){g.beginPath();g.arc(x,y,Math.max(0,r),0,TAU);g.fillStyle=fill;g.fill()}
 export function poly(g:G2D,pts:number[],fill:string|CanvasGradient|null,stroke:string|null=OUT,lw=1.2){
   g.beginPath();for(let i=0;i<pts.length;i+=2)i?g.lineTo(pts[i],pts[i+1]):g.moveTo(pts[i],pts[i+1]);g.closePath();

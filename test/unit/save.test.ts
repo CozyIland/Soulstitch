@@ -23,6 +23,8 @@ test('Stand v2 (Prototyp 0.3) wird übernommen', () => {
   assert.equal(s.eq.kopf, 'k2');
   assert.equal(s.eq.armR, 'a3');
   assert.ok(!('run' in s));
+  assert.equal(s.limit, 1);      // neu in v4
+  assert.deepEqual(s.sel, []);
 });
 
 test('Stand v1 (erster Prototyp): nur der Rekord bleibt', () => {
@@ -47,6 +49,13 @@ test('kaputte Daten führen nicht zum Absturz', () => {
   assert.deepEqual(s.own, { a3: 2 });  // unbekannte IDs und Startteile fallen weg, Anzahl begrenzt
   assert.equal(s.eq.kopf, 'k0');       // ein Arm passt nicht auf den Kopf
   assert.equal(s.eq.armL, 'a0');
+});
+
+test('Stand v4: Fähigkeits-Limit und Wahl bleiben erhalten, Unsinn fliegt raus', () => {
+  const s = sanitize({ v: 4, limit: 2, sel: ['jump', 'fliegen', 'block'] });
+  assert.equal(s.limit, 2);
+  assert.deepEqual(s.sel, ['jump', 'block']); // Reihenfolge = Vorrang
+  assert.equal(sanitize({ limit: 99 }).limit, 3);
 });
 
 test('nicht besessene Teile werden abgelegt', () => {

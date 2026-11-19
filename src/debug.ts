@@ -16,14 +16,19 @@ const ACTIONS: Record<string, () => void> = {
   die: () => fightDebug.die(),
   abyss: () => { abortRun(); go('abyss', TEXTS.abyss.debug); },
   abil: () => {
-    // alle → nur Blocken → nur Springen → nur Ausweichen → alle
-    const cur = prof.abilities.length === 1 ? ABILITY_SETS.findIndex((s) => s.length === 1 && s[0] === prof.abilities[0]) : 0;
-    prof.abilities = [...ABILITY_SETS[(cur + 1) % ABILITY_SETS.length]];
+    // Körper → alle → nur Blocken → nur Springen → nur Ausweichen → Körper
+    const o = prof.abilityOverride;
+    const cur = o === null ? -1 : ABILITY_SETS.findIndex((s) => s.join() === o.join());
+    const next = cur + 1;
+    prof.abilityOverride = next >= ABILITY_SETS.length ? null : [...ABILITY_SETS[next]];
   },
 };
 const ABILITY_SETS: AbilityId[][] = [[...ABILITY_IDS], ['block'], ['jump'], ['dodge']];
 const ABILITY_NAMES: Record<AbilityId, string> = { block: 'Blocken', jump: 'Springen', dodge: 'Ausweichen' };
-const abilLabel = () => 'Fähigkeiten: ' + (prof.abilities.length === ABILITY_IDS.length ? 'alle' : prof.abilities.map((a) => ABILITY_NAMES[a]).join(', '));
+const abilLabel = () => {
+  const o = prof.abilityOverride;
+  return 'Fähigkeiten: ' + (o === null ? 'vom Körper' : o.length === ABILITY_IDS.length ? 'alle' : o.map((a) => ABILITY_NAMES[a]).join(', '));
+};
 
 export function initDebug(): void {
   const forced = new URLSearchParams(location.search).has('debug');
@@ -46,7 +51,10 @@ export function initDebug(): void {
   (window as unknown as { __dbg: unknown }).__dbg = {
     /** Run ab einem Kampf starten: 'rekrut' usw. für Gladiatoren, eine Zahl für alte Boss n */
     fight: (ref: string | number) => startRun(fightsFrom(typeof ref === 'number' ? { kind: 'boss', n: ref } : { kind: 'gladiator', id: ref })),
-    abilities: (ids: AbilityId[]) => { prof.abilities = [...ids]; },
+    /** Fähigkeiten erzwingen; null = wieder vom Körper bestimmen */
+    abilities: (ids: AbilityId[] | null) => { prof.abilityOverride = ids ? [...ids] : null; },
+    equip: (eq: Record<string, string>) => { Object.assign(prof.save.eq, eq); },
+    sel: (ids: AbilityId[]) => { prof.save.sel = [...ids]; },
     attack: (id: GladAttackId) => fightDebug.attack(id),
     place: (x: number, f: number) => fightDebug.place(x, f),
     gladAt: (x: number) => fightDebug.gladAt(x),

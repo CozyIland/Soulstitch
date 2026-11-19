@@ -65,10 +65,10 @@ test.describe('Ablauf', () => {
     await waitScene(page, 'abyss');
     await call(page, 'bones', 100);
     await tap(page, 300, 62 + 4 * 31 + 10);  // Platz „Rechter Arm“
-    await tap(page, 500, 62 + 3 * 50 + 20);  // Kanonenarm: auswählen
-    await tap(page, 500, 62 + 3 * 50 + 20);  // … und kaufen
+    await tap(page, 500, 62 + 4 * 44 + 20);  // Kanonenarm (5. Karte): auswählen
+    await tap(page, 500, 62 + 4 * 44 + 20);  // … und kaufen
     const s = await save(page);
-    expect(s.v).toBe(3);
+    expect(s.v).toBe(4);
     expect(s.bones).toBe(75);
     expect(s.own.a3).toBe(1);
     expect(s.eq.armR).toBe('a3');
@@ -103,7 +103,7 @@ test.describe('Ablauf', () => {
     await waitScene(page, 'abyss');
     await expect(page.locator('#dbg')).toBeVisible();
     await tap(page, 300, 62 + 10);           // Kopf
-    await tap(page, 500, 62 + 3 * 50 + 20);  // Doppelschädel sofort anlegen
+    await tap(page, 500, 62 + 3 * 44 + 20);  // Doppelschädel sofort anlegen
     expect(await page.evaluate(() => localStorage.getItem('soulstitch-save'))).toBeNull();
   });
 
@@ -122,6 +122,58 @@ test.describe('Ablauf', () => {
     expect(s.best).toBe(4);
     expect(s.bones).toBe(33 + 7);
     expect(s.eq.kopf).toBe('k2');
+  });
+});
+
+test.describe('Körper und Archetypen', () => {
+  /** Kampf mit einem bestimmten Körper; die Fähigkeiten bestimmt der Körper selbst (kein Debug-Zwang). */
+  async function bodyDuel(page: Page, eq: Record<string, string>, attack: string, keys: [number, 'down' | 'up', string][]) {
+    await call(page, 'abilities', null);
+    await call(page, 'equip', eq);
+    await call(page, 'sel', []);
+    await call(page, 'fight', 'veteran');
+    await waitPhase(page, 'play');
+    await page.evaluate(({ attack, keys }) => {
+      const d = (window as unknown as { __dbg: DbgApi }).__dbg;
+      d.place(260, 1); d.gladAt(320); d.attack(attack);
+      for (const [ms, type, code] of keys) setTimeout(() => window.dispatchEvent(new KeyboardEvent(type === 'down' ? 'keydown' : 'keyup', { code })), ms);
+    }, { attack, keys });
+  }
+  const BLOCK = { armL: 'a4', armR: 'a4', beinL: 'l0', beinR: 'l0' }; // Schildarme (+ Läuferbeine, aber Block ist stärker gewählt)
+  const JUMP = { armL: 'a0', armR: 'a0', beinL: 'l3', beinR: 'l3' };   // Froschbeine
+
+  test('Block-Körper blockt den Hieb', async ({ page }) => {
+    await call(page, 'sel', ['block']);
+    await bodyDuel(page, BLOCK, 'hieb', [[0, 'down', 'KeyK'], [1100, 'up', 'KeyK']]);
+    await page.waitForTimeout(1300);
+    expect((await dbg(page)).phase).toBe('play');
+  });
+
+  test('Block-Körper kann nicht springen: der Fegeschlag trifft', async ({ page }) => {
+    await bodyDuel(page, BLOCK, 'feger', [[460, 'down', 'Space'], [900, 'up', 'Space']]);
+    await waitPhase(page, 'dead');
+  });
+
+  test('Sprung-Körper springt über den Fegeschlag', async ({ page }) => {
+    await bodyDuel(page, JUMP, 'feger', [[460, 'down', 'Space'], [900, 'up', 'Space']]);
+    await page.waitForTimeout(1500);
+    expect((await dbg(page)).phase).toBe('play');
+  });
+
+  test('Sprung-Körper kann nicht blocken: der Hieb trifft', async ({ page }) => {
+    await bodyDuel(page, JUMP, 'hieb', [[0, 'down', 'KeyK']]);
+    await waitPhase(page, 'dead');
+  });
+
+  test('Fähigkeit im Abgrund wählen (Limit 1)', async ({ page }) => {
+    await tap(page, 260, 258);
+    for (let i = 0; i < 4; i++) await tap(page, 320, 200);
+    await waitScene(page, 'abyss');
+    await call(page, 'equip', { armL: 'a4', armR: 'a4' }); // Block + Ausweichen verfügbar
+    await tap(page, 14 + 32, 292);  // Chip „Block“
+    expect((await save(page)).sel[0]).toBe('block');
+    await tap(page, 154 + 32, 292); // Chip „Dash“
+    expect((await save(page)).sel[0]).toBe('dodge');
   });
 });
 

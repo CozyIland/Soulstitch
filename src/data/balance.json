@@ -71,5 +71,28 @@
     "hurt": 0.12,
     "parry": 0.14
   },
-  "hurtKnockback": 190
+  "hurtKnockback": 190,
+  "body": {
+    "baseSize": 7,
+    "sizePerHeart": 3,
+    "baseWeight": 7,
+    "speedAtBase": 1.1,
+    "speedPerWeight": 0.05,
+    "minSpeed": 0.5,
+    "jumpPerWeight": 0.03,
+    "minJump": 0.75
+  },
+  "archetype": {
+    "level1": 2,
+    "level2": 4,
+    "startLimit": 1,
+    "block2": {
+      "parryWindow": 0.26,
+      "moveFactor": 0.6
+    },
+    "dodge2": {
+      "cooldownFactor": 0.6,
+      "extraInvulnerability": 0.1
+    }
+  }
 }

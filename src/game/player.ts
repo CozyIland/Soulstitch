@@ -83,7 +83,7 @@ export function updatePlayer(p: Player, st: Stats, intent: Intent, dt: number, o
   } else {
     let mx = intent.move;
     if (p.atk && p.gnd) mx *= 0.25;
-    if (p.blocking) mx *= BALANCE.block.moveFactor;
+    if (p.blocking) mx *= st.blockMove;
     p.x += mx * spd * dt;
     if (mx) { p.run += dt * spd * 0.085; p.mf = Math.sign(mx); } else p.run = 0;
     if (!p.atk && !p.blocking && !o.magic && intent.move) p.f = Math.sign(intent.move);
@@ -190,7 +190,7 @@ export function drawPlayer(p: Player, st: Stats, magic: boolean): void {
   }
   // Block: Schutzbogen vor der Figur, hell im Paraden-Fenster
   if (!magic && p.blocking) {
-    const parry = p.blockT <= BALANCE.block.parryWindow;
+    const parry = p.blockT <= st.parry;
     ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.lineCap = 'round';
     const cx = p.x + p.f * 4, cy = p.y - 22, a = p.f > 0 ? 0 : Math.PI, r = 19;
     ctx.fillStyle = parry ? 'rgba(200,250,255,.28)' : 'rgba(90,200,255,.16)';

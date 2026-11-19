@@ -110,12 +110,15 @@ Ob es Spaß macht, entscheidet das Spielen: Im Testmodus lassen sich die Fähigk
 Die alten 30 Schuss-Bosse bleiben im Testmodus als Vorschau auf die Magie (Akt II) spielbar.
 
 ### Phase 2 – Körper und Archetypen
-- [ ] Körperteil-Daten: Platz, Archetyp-Fähigkeit, Größe, Gewicht
-- [ ] Ein Körper berechnet aus seinen Teilen Werte und Fähigkeiten: Gewicht → Lebenspunkte und Tempo
-- [ ] **Fähigkeits-Limit:** Angriff plus N Fähigkeiten, am Anfang N = 1
-- [ ] Körperwahl im Leichenhaufen auf Archetypen umbauen, die bestehende Szene wird weiterverwendet
+- [x] Körperteil-Daten: Platz, Archetyp und Punkte, Größe, Gewicht, Aussehen (`src/data/parts.json`)
+- [x] Körperwerte aus den Teilen: **Größe → Herzen**, **Gewicht → Tempo und Sprunghöhe**; Archetyp-Punkte → Fähigkeit ab 2 Punkten, Stufe II ab 4 (Doppelsprung, leichtere Parade, schnellerer Dash)
+- [x] **Fähigkeits-Limit:** Angriff plus N Fähigkeiten, am Anfang N = 1 (im Speicherstand; steigt ab Phase 4)
+- [x] Körperwahl im Leichenhaufen: Karten zeigen Archetyp, Größe und Gewicht; Fähigkeiten-Chips zeigen, was der Körper kann, und wählen die aktive aus
+- [x] Kostenlose Starter-Teile für jeden Archetyp: Schildarm (Block), Froschbein (Sprung), Läuferbein (Ausweichen)
 
 **Fertig, wenn** sich ein Block-Körper und ein Sprung-Körper spürbar anders spielen.
+Block-Körper: mehr Herzen, langsamer, blockt und pariert, kann nicht springen. Sprung-Körper: schnell, ein Herz,
+springt hoch (mit Stufe II doppelt), kann nicht blocken. Die Tests prüfen beides im Kampf.
 
 ### Phase 3 – Run und Währung
 - [ ] Run-Ablauf: **Vater** → Gladiatoren → Endgegner

@@ -1,3 +1,7 @@
+// Fähigkeiten, die ein Körper mitbringen kann (Archetypen)
+export const ABILITY_IDS = ['block', 'jump', 'dodge'] as const;
+export type AbilityId = (typeof ABILITY_IDS)[number];
+
 // Namen, die in den Daten vorkommen dürfen. Die Tests prüfen die JSON-Dateien dagegen.
 export const ATTACK_NAMES = [
   'aimed', 'fan', 'ring', 'spiral', 'flower', 'accRing', 'charge', 'slam', 'tpRing',

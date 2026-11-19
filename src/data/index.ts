@@ -6,7 +6,7 @@ import balanceJson from './balance.json' with { type: 'json' };
 import textsJson from './texts.json' with { type: 'json' };
 import gladJson from './gladiators.json' with { type: 'json' };
 import runJson from './run.json' with { type: 'json' };
-import type { AttackName, MoveName, ShapeName } from '../game/constants.ts';
+import type { AttackName, MoveName, ShapeName, AbilityId } from '../game/constants.ts';
 
 export type SlotType = 'kopf' | 'brust' | 'herz' | 'arm' | 'bein';
 export type SlotKey = 'kopf' | 'brust' | 'herz' | 'armL' | 'armR' | 'beinL' | 'beinR';
@@ -19,6 +19,11 @@ export interface Part {
   p: number; // Preis in Knochen (0 = Startteil)
   col: string;
   typ: SlotType;
+  look?: string;   // Aussehen an der Figur (render/body.ts)
+  size: number;    // Größe: mehr Masse = mehr Herzen
+  weight: number;  // Gewicht: schwer = langsamer, springt niedriger
+  arch?: AbilityId; // Archetyp, für den das Teil Punkte gibt
+  pts?: number;
   hp?: number; sp?: number; fr?: number; dmg?: number; bs?: number; life?: number;
   dcd?: number; jmp?: number; inv?: number; leech?: number;
   home?: number; horn?: number; twin?: number; rage?: number;

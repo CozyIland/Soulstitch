@@ -21,18 +21,20 @@ import { bossReward, bossMaxHp } from './stats.ts';
 import type { Stats } from './stats.ts';
 import { R, fightWon, nextFight, endRun } from './run.ts';
 import type { Scene } from './scenes.ts';
-import { prof, persist, stats, bonesTxt } from './profile.ts';
+import { prof, persist, stats, bonesTxt, activeAbilities } from './profile.ts';
 import { world, eb, pb, hz, shot, burst, hitP, aim, clearArena, overlap, playerBox } from './world.ts';
 import type { Foe } from './world.ts';
 import { A } from './attacks.ts';
 import { resolveHit } from './abilities.ts';
-import type { IncomingHit, HitResult } from './abilities.ts';
+import type { IncomingHit, HitResult, AbilityId } from './abilities.ts';
 import { newPlayer, readIntent, updatePlayer, drawPlayer } from './player.ts';
 import { createGlad, updateGlad, gladAttackBox, gladHurtbox, hurtGlad, gladDeflected, forceAttack, attackDef } from './gladiator.ts';
 import type { Glad, GladEvent } from './gladiator.ts';
 
 type Phase = 'intro' | 'play' | 'clear' | 'dead';
 let phase: Phase = 'intro', pt = 0, msg = '', deadT = 0, st: Stats = null;
+/** im Kampf aktive Fähigkeiten (vom Körper bestimmt, siehe profile.activeAbilities) */
+let active: AbilityId[] = [];
 let magic = false;         // alter Schuss-Boss: Spieler schießt statt zu schlagen
 let glad: Glad | null = null;
 /** kurze Schriftzüge über dem Geschehen (Parade, Schild …) */
@@ -101,7 +103,7 @@ function startFight(ref: FightRef): void {
 function hurtPlayer(hit: IncomingHit, fromGlad = false): HitResult {
   const p = world.p;
   if (G.debug.god || phase !== 'play' || p.inv > 0) return 'evade';
-  const r = resolveHit(p, hit, prof.abilities);
+  const r = resolveHit(p, hit, active, st);
   if (r === 'evade') return r;
   if (r === 'parry') {
     G.hitstop = BALANCE.hitstop.parry; G.shake = Math.max(G.shake, 5);
@@ -278,13 +280,14 @@ function updBullets(dt:number){
 
 function updFight(dt: number): void {
   // Hitstop: ein paar Hundertstel alles anhalten, damit Treffer wuchtig wirken
-  touch.buttons = prof.abilities.map((id) => ({ id, ...BUTTONS[id] }));
+  active = activeAbilities(st); // Debug kann das mitten im Kampf ändern
+  touch.buttons = active.map((id) => ({ id, ...BUTTONS[id] }));
   if (G.hitstop > 0) { G.hitstop -= dt; return; }
   const p = world.p;
   pt -= dt;
   if (phase === 'intro') { if (pt <= 0) phase = 'play'; }
   else if (phase === 'play') {
-    updatePlayer(p, st, readIntent(), dt, { magic, canAct: true, active: prof.abilities });
+    updatePlayer(p, st, readIntent(), dt, { magic, canAct: true, active });
     if (magic) { updBoss(dt); updBullets(dt); } else updGlad(dt);
   }
   else if (phase === 'dead') {
@@ -294,7 +297,7 @@ function updFight(dt: number): void {
     if (deadT >= 4.8) endRun('death', fmt(TEXTS.abyss.death, { name: world.foe.name }));
   }
   else if (phase === 'clear') {
-    updatePlayer(p, st, readIntent(), dt, { magic, canAct: false, active: prof.abilities });
+    updatePlayer(p, st, readIntent(), dt, { magic, canAct: false, active });
     if (magic) updBullets(dt);
     if (pt <= 0) nextFight();
   }
@@ -375,10 +378,12 @@ function drawFight(): void {
     ctx.save(); ctx.translate(20 + i * 20, 17); ctx.beginPath(); ctx.moveTo(0, 6); ctx.bezierCurveTo(-11, -3, -5, -10, 0, -4); ctx.bezierCurveTo(5, -10, 11, -3, 0, 6);
     ctx.fillStyle = i < p.hp ? '#ff3858' : '#3a1c22'; ctx.fill(); ctx.strokeStyle = OUT; ctx.lineWidth = 1.4; ctx.stroke(); ctx.restore();
   }
-  if (prof.abilities.includes('dodge')) {
+  if (active.includes('dodge')) {
     rr(ctx, 12, 30, 62, 6, 3); ctx.fillStyle = '#182a30'; ctx.fill(); ctx.strokeStyle = OUT; ctx.lineWidth = 1; ctx.stroke();
     const dk = clamp(1 - p.dcd / st.dcd, 0, 1); if (dk > .1) { rr(ctx, 12, 30, 62 * dk, 6, 3); ctx.fillStyle = dk >= 1 ? '#5ff' : '#2a8a96'; ctx.fill(); }
   }
+  const AB: Record<AbilityId, [string, string]> = { block: ['⛨ BLOCK', '#e8c060'], jump: ['⤒ SPRUNG', '#7ad07a'], dodge: ['» DASH', '#6fd8ff'] };
+  active.forEach((id, i) => txt(AB[id][0] + (st.lvl[id] === 2 ? ' II' : ''), 12 + i * 62, 40, AB[id][1], 'left', 9.5, true));
   txt((prof.test ? 'TESTMODUS' : 'Rekord ' + prof.save.best) + '   ☠ ' + bonesTxt(), W - 12, 40, '#b0a090', 'right', 12);
   if (touch.mode && phase !== 'dead') {
     for (const q of touch.buttons) {

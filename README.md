@@ -17,6 +17,10 @@ Läuft im Browser, auf PC und Handy.
 | Springen | W oder Leertaste | links nach oben ziehen oder SPRUNG |
 | Ausweichen | Shift oder L | DASH |
 
+Welche Fähigkeiten du hast, bestimmt dein **Körper**: Schildarme machen einen Block-Körper, Froschbeine einen Sprung-Körper,
+Läuferbeine einen Ausweich-Körper. Am Anfang ist nur **eine** Fähigkeit gleichzeitig aktiv – im Leichenhaufen wählst du sie
+über die Chips links unten (oder Taste 1–3). Große Teile geben Herzen, schwere machen langsamer.
+
 Gelb angekündigte Angriffe („!“) lassen sich blocken, rot angekündigte („!!“) nicht – dann springen oder ausweichen.
 Wer den Block kurz vor dem Treffer hebt, pariert: Der Gegner taumelt.
 

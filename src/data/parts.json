@@ -10,34 +10,31 @@
   ],
   "types": {
     "kopf": [
-      {"id":"k0","n":"Namenloser Schädel","d":"Kein Bonus.","p":0,"col":"#ddd4ba"},
-      {"id":"k1","n":"Krähenschädel","d":"Nur Magie: Schüsse lenken zum Boss.","p":25,"col":"#6a6a88","home":1},
-      {"id":"k2","n":"Hornschädel","d":"Dash durch den Boss: 3 Schaden.","p":35,"col":"#c8a070","horn":1},
-      {"id":"k3","n":"Doppelschädel","d":"Nur Magie: zwei Schüsse auf einmal.","p":60,"col":"#d0a4b6","twin":1}
-    ],
+      {"id":"k0","n":"Namenloser Schädel","d":"Leicht und schlicht.","p":0,"col":"#ddd4ba","look":"plain","size":1,"weight":1},
+      {"id":"k1","n":"Krähenschädel","d":"Wachsame Augen. Magie: Schüsse lenken zum Boss.","p":25,"col":"#6a6a88","look":"crow","size":1,"weight":1,"arch":"dodge","pts":1,"home":1},
+      {"id":"k2","n":"Hornschädel","d":"+25 % Schaden.","p":35,"col":"#c8a070","look":"horn","size":2,"weight":2,"arch":"block","pts":1,"dmg":0.25},
+      {"id":"k3","n":"Doppelschädel","d":"+15 % Sprunghöhe. Magie: zwei Schüsse.","p":60,"col":"#d0a4b6","look":"twin","size":2,"weight":1,"arch":"jump","pts":1,"jmp":0.15,"twin":1}],
     "brust": [
-      {"id":"b0","n":"Dürrer Rumpf","d":"Kein Bonus.","p":0,"col":"#b8a888"},
-      {"id":"b1","n":"Panzerrippen","d":"Nach Treffern 0,8 s länger geschützt.","p":20,"col":"#8a909c","inv":0.8},
-      {"id":"b2","n":"Soldatenbrust","d":"+1 Herz, −10 % Tempo.","p":30,"col":"#7a8e6a","hp":1,"sp":-0.1},
-      {"id":"b3","n":"Kolossrumpf","d":"+2 Herzen, −25 % Tempo.","p":55,"col":"#9a5e4c","hp":2,"sp":-0.25}
-    ],
+      {"id":"b0","n":"Dürrer Rumpf","d":"Leicht und schlicht.","p":0,"col":"#b8a888","look":"thin","size":1,"weight":1},
+      {"id":"b1","n":"Panzerrippen","d":"Nach Treffern 0,8 s länger geschützt.","p":30,"col":"#8a909c","look":"plated","size":2,"weight":3,"arch":"block","pts":2,"inv":0.8},
+      {"id":"b2","n":"Soldatenbrust","d":"+1 Herz.","p":30,"col":"#7a8e6a","look":"soldier","size":2,"weight":2,"arch":"block","pts":1,"hp":1},
+      {"id":"b3","n":"Kolossrumpf","d":"Riesig: viel Leben, sehr schwer.","p":55,"col":"#9a5e4c","look":"colossus","size":4,"weight":4},
+      {"id":"b4","n":"Hohler Brustkorb","d":"Federleicht.","p":25,"col":"#c8bc9c","look":"hollow","size":1,"weight":0,"arch":"jump","pts":1}],
     "herz": [
-      {"id":"h0","n":"Stilles Herz","d":"Kein Bonus.","p":0,"col":"#b03838"},
-      {"id":"h1","n":"Gestärktes Herz","d":"+1 Herz.","p":30,"col":"#ff4868","hp":1},
-      {"id":"h2","n":"Rasendes Herz","d":"Bei 1 Herz: +40 % Schlag- und Lauftempo.","p":35,"col":"#ff8a30","rage":1},
-      {"id":"h3","n":"Seelenherz","d":"Jeder 8. Treffer heilt 1 Herz.","p":50,"col":"#40e0ff","leech":8}
-    ],
+      {"id":"h0","n":"Stilles Herz","d":"Schlägt nicht mehr.","p":0,"col":"#b03838","size":1,"weight":1},
+      {"id":"h1","n":"Gestärktes Herz","d":"+1 Herz.","p":30,"col":"#ff4868","size":1,"weight":1,"hp":1},
+      {"id":"h2","n":"Rasendes Herz","d":"Bei 1 Herz: +40 % Schlag- und Lauftempo.","p":35,"col":"#ff8a30","size":1,"weight":1,"arch":"dodge","pts":1,"rage":1},
+      {"id":"h3","n":"Seelenherz","d":"Jeder 8. Treffer heilt 1 Herz.","p":50,"col":"#40e0ff","size":1,"weight":1,"leech":8}],
     "arm": [
-      {"id":"a0","n":"Knochenarm","d":"Kein Bonus.","p":0,"col":"#ddd4ba"},
-      {"id":"a1","n":"Speerarm","d":"+30 % Reichweite.","p":15,"col":"#c8b48c","bs":0.3},
-      {"id":"a2","n":"Schnitterklaue","d":"+25 % Schlagtempo, −20 % Reichweite.","p":15,"col":"#c85454","fr":0.25,"life":-0.2},
-      {"id":"a3","n":"Kanonenarm","d":"+50 % Schaden, −15 % Schlagtempo.","p":25,"col":"#68728a","dmg":0.5,"fr":-0.15}
-    ],
+      {"id":"a0","n":"Knochenarm","d":"Leicht und schlicht.","p":0,"col":"#ddd4ba","look":"bone","size":1,"weight":1},
+      {"id":"a4","n":"Schildarm","d":"Trägt einen Knochenschild.","p":0,"col":"#c8b89c","look":"shield","size":2,"weight":2,"arch":"block","pts":1},
+      {"id":"a1","n":"Speerarm","d":"+30 % Reichweite.","p":15,"col":"#c8b48c","look":"spear","size":1,"weight":1,"bs":0.3},
+      {"id":"a2","n":"Schnitterklaue","d":"+25 % Schlagtempo, −20 % Reichweite.","p":15,"col":"#c85454","look":"claw","size":1,"weight":1,"arch":"dodge","pts":1,"fr":0.25,"life":-0.2},
+      {"id":"a3","n":"Kanonenarm","d":"+50 % Schaden, −15 % Schlagtempo.","p":25,"col":"#68728a","look":"cannon","size":2,"weight":3,"dmg":0.5,"fr":-0.15}],
     "bein": [
-      {"id":"l0","n":"Läuferbein","d":"Kein Bonus.","p":0,"col":"#a89878"},
-      {"id":"l1","n":"Stelze","d":"+12 % Lauftempo.","p":15,"col":"#c09c58","sp":0.12},
-      {"id":"l2","n":"Sprungsehne","d":"Dash lädt 30 % schneller.","p":15,"col":"#70b070","dcd":0.3},
-      {"id":"l3","n":"Froschbein","d":"+12 % Sprunghöhe. Zwei: Doppelsprung.","p":25,"col":"#5a9a5a","jmp":0.12}
-    ]
+      {"id":"l0","n":"Läuferbein","d":"Flink auf den Füßen.","p":0,"col":"#a89878","look":"runner","size":1,"weight":1,"arch":"dodge","pts":1},
+      {"id":"l3","n":"Froschbein","d":"Kräftige Sprungmuskeln.","p":0,"col":"#5a9a5a","look":"frog","size":1,"weight":1,"arch":"jump","pts":1},
+      {"id":"l1","n":"Stelze","d":"+12 % Lauftempo.","p":15,"col":"#c09c58","look":"stilt","size":2,"weight":1,"arch":"dodge","pts":1,"sp":0.12},
+      {"id":"l2","n":"Sprungsehne","d":"+10 % Sprunghöhe.","p":20,"col":"#70b070","look":"spring","size":1,"weight":1,"arch":"jump","pts":1,"jmp":0.1}]
   }
 }

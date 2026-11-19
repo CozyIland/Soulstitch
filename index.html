@@ -16,7 +16,7 @@ canvas{width:min(100vw,calc(100vh*16/9));width:min(100vw,calc(100dvh*16/9));aspe
 .ov{position:fixed;inset:0;z-index:3;display:none;align-items:center;justify-content:center;padding:24px;background:rgba(0,0,0,.88);color:#efe6d0;font:17px/1.45 "Trebuchet MS","Segoe UI",sans-serif;text-align:center}
 .ov b{color:#7ff;font-size:22px}
 @media (orientation:portrait) and (pointer:coarse){#rot{display:flex}}
-#dbg{position:fixed;left:max(8px,env(safe-area-inset-left));bottom:max(8px,env(safe-area-inset-bottom));z-index:2;font:12px/1.2 "Trebuchet MS","Segoe UI",sans-serif}
+#dbg{position:fixed;left:max(8px,env(safe-area-inset-left));top:38%;z-index:2;font:12px/1.2 "Trebuchet MS","Segoe UI",sans-serif}
 #dbg button{display:block;margin-top:4px;padding:6px 10px;border-radius:8px;border:1px solid rgba(255,176,64,.6);background:rgba(20,12,10,.85);color:#ffd8a0;font:inherit;cursor:pointer;touch-action:manipulation}
 #dbgToggle{width:36px;height:36px;padding:0!important;font-size:18px!important}
 </style>
@@ -30,7 +30,7 @@ canvas{width:min(100vw,calc(100vh*16/9));width:min(100vw,calc(100dvh*16/9));aspe
   <div id="dbgPanel" hidden>
     <button type="button" data-act="bones">+100 Knochen</button>
     <button type="button" data-act="win">Kampf gewinnen</button>
-    <button type="button" data-act="abil">Fähigkeiten: alle</button>
+    <button type="button" data-act="abil">Fähigkeiten: vom Körper</button>
     <button type="button" data-act="god">Unverwundbar: aus</button>
     <button type="button" data-act="die">Sterben</button>
     <button type="button" data-act="abyss">Zum Abgrund</button>
