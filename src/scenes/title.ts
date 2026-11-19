@@ -5,6 +5,9 @@ import { inR } from '../core/util.ts';
 import { G } from '../core/state.ts';
 import { beep } from '../core/audio.ts';
 import { touch, mouse, KP, ok } from '../core/input.ts';
+import { bindings } from '../core/bindings.ts';
+import { keyLabel } from '../core/keymap.ts';
+import type { ActionId } from '../core/keymap.ts';
 import { txt, rr } from '../render/draw.ts';
 import { drawBody } from '../render/body.ts';
 import { bg, drawStage } from '../render/backgrounds.ts';
@@ -83,24 +86,42 @@ export const victoryScene: Scene = {
 
 /** Übersicht der Steuerung und Kampf-Tipps; arg = Szene, zu der es zurückgeht */
 let helpBack: SceneName = 'title';
+const KEYS_BTN = { x: W - 190, y: H - 30, w: 166, h: 22 };
+interface HelpRow { n: string; act?: ActionId[]; extra?: string; pc?: string; touch: string }
+/** PC-Spalte: aktuelle Tastenbelegung der Aktionen */
+function pcText(r: HelpRow): string {
+  if (r.pc) return r.pc;
+  const parts = (r.act ?? []).map((id) => bindings.map[id].filter(Boolean).map((c) => keyLabel(c)).join(' / ') || '–');
+  return parts.join('  ·  ') + (r.extra ? '  ·  ' + r.extra : '');
+}
 export const helpScene: Scene = {
-  enter(arg) { helpBack = (arg as SceneName) || 'title'; },
-  update() { if (ok() || mouse.click || KP('Escape', 'KeyH')) { beep(440, .05); go(helpBack); } },
+  enter(arg) { if (arg) helpBack = arg as SceneName; },
+  update() {
+    if (!touch.mode && (KP('KeyT') || (mouse.click && inR(KEYS_BTN, mouse.x, mouse.y)))) { beep(520, .05); go('keys'); return; }
+    if (ok() || mouse.click || KP('Escape', 'KeyH')) { beep(440, .05); go(helpBack); }
+  },
   draw() {
     const H2 = TEXTS.help;
     if (helpBack === 'abyss') { ctx.drawImage(bg.morgue, 0, 0, W, H); } else { drawStage(); ctx.drawImage(bg.front, 0, 0, W, H); }
     ctx.fillStyle = 'rgba(8,5,7,.86)'; ctx.fillRect(0, 0, W, H);
-    txt(H2.title, W / 2, 10, '#f4ead4', 'center', 26, true, true);
-    const X = [40, 236, 412], y0 = 50, rh = 21;
+    txt(H2.title, W / 2, 8, '#f4ead4', 'center', 24, true, true);
+    const X = [40, 226, 430], y0 = 42, rh = 19;
     H2.head.forEach((h, i) => txt(h, X[i], y0, '#9a8a80', 'left', 10, true));
-    H2.rows.forEach((row, r) => {
-      const y = y0 + 16 + r * rh;
+    (H2.rows as HelpRow[]).forEach((row, r) => {
+      const y = y0 + 15 + r * rh;
       if (r % 2 === 0) { ctx.fillStyle = 'rgba(255,255,255,.04)'; ctx.fillRect(30, y - 3, W - 60, rh); }
-      row.forEach((c, i) => txt(c, X[i], y, i === 0 ? '#f0e8d0' : '#8fe6ff', 'left', 11.5, i === 0));
+      txt(row.n, X[0], y, '#f0e8d0', 'left', 11, true);
+      txt(pcText(row), X[1], y, '#8fe6ff', 'left', 11);
+      txt(row.touch, X[2], y, '#8fe6ff', 'left', 11);
     });
-    const ty = y0 + 26 + H2.rows.length * rh;
+    const ty = y0 + 22 + H2.rows.length * rh;
     txt('IM KAMPF', 40, ty, '#9a8a80', 'left', 10, true);
-    H2.tips.forEach((l, i) => txt('·  ' + l, 40, ty + 15 + i * 16, '#d0c8b0', 'left', 11));
-    if ((G.time * 2 | 0) % 2) txt(H2.back, W / 2, H - 22, '#b0a090', 'center', 11);
+    H2.tips.forEach((l, i) => txt('·  ' + l, 40, ty + 14 + i * 15, '#d0c8b0', 'left', 10.5));
+    if ((G.time * 2 | 0) % 2) txt(H2.back, touch.mode ? W / 2 : 40, H - 26, '#b0a090', touch.mode ? 'center' : 'left', 11);
+    if (!touch.mode) {
+      rr(ctx, KEYS_BTN.x, KEYS_BTN.y, KEYS_BTN.w, KEYS_BTN.h, 6); ctx.fillStyle = '#24627a'; ctx.fill();
+      ctx.strokeStyle = '#bff'; ctx.lineWidth = 1.2; ctx.stroke();
+      txt(H2.keysButton, KEYS_BTN.x + KEYS_BTN.w / 2, KEYS_BTN.y + 5, '#fff', 'center', 11, true);
+    }
   },
 };

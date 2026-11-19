@@ -25,6 +25,9 @@ Läuferbeine einen Ausweich-Körper. Am Anfang ist nur **eine** Fähigkeit gleic
 Gelb angekündigte Angriffe („!“) lassen sich blocken, rot angekündigte („!!“) nicht – dann springen oder ausweichen.
 Wer den Block kurz vor dem Treffer hebt, pariert: Der Gegner taumelt.
 
+Die **Tasten sind frei belegbar** (PC): Startmenü → Steuerung → „Tasten ändern“. Die Belegung wird im Browser
+gespeichert (`soulstitch-keys`), getrennt vom Spielstand; Standardwerte stehen in `src/data/controls.json`.
+
 Im Startmenü gibt es den **Testmodus**: alle Teile frei, Start-Kampf frei wählbar (auch die alten Schuss-Bosse als
 Magie-Vorschau), Debug-Werkzeuge (🛠 unten links) mit Fähigkeiten-Umschalter, nichts wird gespeichert.
 Die Debug-Werkzeuge lassen sich auch im normalen Spiel mit `?debug` hinter der Adresse einblenden.

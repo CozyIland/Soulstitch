@@ -7,6 +7,7 @@ import { TAU, rnd, clamp, inR } from '../core/util.ts';
 import { G } from '../core/state.ts';
 import { beep } from '../core/audio.ts';
 import { touch, mouse, KP, ok } from '../core/input.ts';
+import { actP } from '../core/bindings.ts';
 import type { TouchButton } from '../core/input.ts';
 import { txt, ptxt, circ, poly, rr } from '../render/draw.ts';
 import { drawBody } from '../render/body.ts';
@@ -471,7 +472,7 @@ function deadBody(){
 function updPause(): boolean {
   const clickPause = mouse.click && Math.hypot(mouse.x - PAUSE_BTN.x, mouse.y - PAUSE_BTN.y) < PAUSE_BTN.r + 8;
   if (!paused) {
-    if ((KP('Escape', 'KeyP') || clickPause) && phase !== 'dead') { paused = true; pauseSel = 0; mouse.click = false; beep(330, .06); }
+    if ((KP('Escape') || actP('pause') || clickPause) && phase !== 'dead') { paused = true; pauseSel = 0; mouse.click = false; beep(330, .06); }
     if (clickPause) mouse.click = false;
     return paused;
   }
@@ -480,7 +481,7 @@ function updPause(): boolean {
   if (KP('KeyS', 'ArrowDown')) { pauseSel = (pauseSel + 1) % n; beep(300, .03); }
   let pick = ok() ? pauseSel : -1;
   if (mouse.click) for (let i = 0; i < n; i++) if (inR(PAUSE_ITEM(i), mouse.x, mouse.y)) pick = i;
-  if (KP('Escape', 'KeyP') || clickPause) pick = 0;
+  if (KP('Escape') || actP('pause') || clickPause) pick = 0;
   mouse.click = false;
   if (pick === 0) { paused = false; beep(440, .05); }
   else if (pick === 1) go('help', 'fight');
@@ -514,7 +515,7 @@ export const fightScene: Scene = {
 export const fightDebug = {
   info: () => ({
     phase, n: fightNo(), name: world.foe ? world.foe.name : '', hp: world.foe ? world.foe.hp : 0,
-    php: world.p ? world.p.hp : 0, px: world.p ? world.p.x : 0, eb: eb.length, pb: pb.length,
+    php: world.p ? world.p.hp : 0, px: world.p ? world.p.x : 0, py: world.p ? world.p.y : 0, eb: eb.length, pb: pb.length,
     glad: glad ? { state: glad.state, atk: glad.atk, x: glad.x } : null,
   }),
   kill: () => {

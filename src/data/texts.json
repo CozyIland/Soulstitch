@@ -65,46 +65,62 @@
       "Handy (quer halten)"
     ],
     "rows": [
-      [
-        "Laufen",
-        "A / D",
-        "links ziehen"
-      ],
-      [
-        "Schlagen (3er-Combo)",
-        "J · linke Maustaste",
-        "rechts antippen"
-      ],
-      [
-        "Blocken (halten)",
-        "K · S · rechte Maustaste",
-        "BLOCK halten"
-      ],
-      [
-        "Springen",
-        "W · Leertaste",
-        "links nach oben ziehen · SPRUNG"
-      ],
-      [
-        "Ausweichen",
-        "Shift · L",
-        "DASH"
-      ],
-      [
-        "Fähigkeit wählen (Abgrund)",
-        "Tasten 1 · 2 · 3",
-        "Chips links unten"
-      ],
-      [
-        "Menüs",
-        "W/S · A/D · Enter",
-        "antippen"
-      ],
-      [
-        "Pause / Menü",
-        "Escape · P",
-        "⏸ oben rechts"
-      ]
+      {
+        "n": "Laufen",
+        "act": [
+          "left",
+          "right"
+        ],
+        "touch": "links ziehen"
+      },
+      {
+        "n": "Schlagen (3er-Combo)",
+        "act": [
+          "attack"
+        ],
+        "extra": "linke Maus",
+        "touch": "rechts antippen"
+      },
+      {
+        "n": "Blocken (halten)",
+        "act": [
+          "block"
+        ],
+        "extra": "rechte Maus",
+        "touch": "BLOCK halten"
+      },
+      {
+        "n": "Springen",
+        "act": [
+          "jump"
+        ],
+        "touch": "links nach oben ziehen · SPRUNG"
+      },
+      {
+        "n": "Ausweichen",
+        "act": [
+          "dodge"
+        ],
+        "touch": "DASH"
+      },
+      {
+        "n": "Pause / Menü",
+        "act": [
+          "pause"
+        ],
+        "extra": "Esc",
+        "touch": "⏸ oben rechts"
+      },
+      {
+        "n": "Fähigkeit wählen (Abgrund)",
+        "pc": "1 · 2 · 3",
+        "touch": "Chips links unten"
+      },
+      {
+        "n": "Menüs",
+        "pc": "W/S · A/D · Enter",
+        "touch": "antippen"
+      }
     ],
     "tips": [
       "Gelbes „!“ = blockbar.  Rotes „!!“ = nicht blockbar: springen oder ausweichen.",
@@ -113,7 +129,8 @@
       "Dein Körper bestimmt die Fähigkeit: Schildarme = Block, Froschbeine = Sprung, Läuferbeine = Ausweichen.",
       "Neue Teile: einmal antippen zum Auswählen, nochmal zum Kaufen."
     ],
-    "back": "Antippen oder Enter: zurück"
+    "back": "Antippen oder Enter: zurück",
+    "keysButton": "⌨ Tasten ändern (T)"
   },
   "pause": {
     "title": "Pause",
@@ -123,5 +140,15 @@
       "Lauf abbrechen",
       "Hauptmenü"
     ]
+  },
+  "keys": {
+    "title": "Tasten belegen",
+    "hint": "Platz anklicken (oder auswählen + Enter) und neue Taste drücken",
+    "capture": "Neue Taste drücken …   Esc: abbrechen · Entf: Platz leeren",
+    "buttons": [
+      "Standard",
+      "Fertig"
+    ],
+    "note": "Maus bleibt fest: links schlagen, rechts blocken. Esc öffnet immer die Pause. Menüs: W/S · A/D · Enter."
   }
 }

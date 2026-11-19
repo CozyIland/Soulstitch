@@ -5,7 +5,8 @@ import { GY, AL, AR } from '../core/constants.ts';
 import { rnd, clamp } from '../core/util.ts';
 import { G } from '../core/state.ts';
 import { beep } from '../core/audio.ts';
-import { K, KP, mouse, touch } from '../core/input.ts';
+import { mouse, touch } from '../core/input.ts';
+import { act, actP } from '../core/bindings.ts';
 import { circ } from '../render/draw.ts';
 import { drawBody } from '../render/body.ts';
 import { BALANCE } from '../data/index.ts';
@@ -27,17 +28,17 @@ export function newPlayer(st: Stats): Player {
 
 /** Eingaben aus Tastatur, Maus und Touch zu einer Absicht zusammenfassen */
 export function readIntent(): Intent {
-  let move = (K('KeyD', 'ArrowRight') ? 1 : 0) - (K('KeyA', 'ArrowLeft') ? 1 : 0);
+  let move = (act('right') ? 1 : 0) - (act('left') ? 1 : 0);
   if (touch.joy && Math.abs(touch.joy.dx) > 0.25) move = Math.sign(touch.joy.dx);
   const aim = touch.mode ? touch.aim : mouse.down ? mouse : null;
   return {
     move,
-    jumpPressed: KP('Space', 'KeyW', 'ArrowUp'),
-    jumpHeld: K('Space', 'KeyW', 'ArrowUp'),
-    dodgePressed: KP('ShiftLeft', 'ShiftRight', 'KeyL'),
-    blockHeld: K('KeyK', 'KeyS', 'ArrowDown') || mouse.rdown,
-    attackPressed: KP('KeyJ', 'KeyX') || (!touch.mode && mouse.click),
-    attackHeld: K('KeyJ', 'KeyX') || mouse.down || !!touch.aim,
+    jumpPressed: actP('jump'),
+    jumpHeld: act('jump'),
+    dodgePressed: actP('dodge'),
+    blockHeld: act('block') || mouse.rdown,
+    attackPressed: actP('attack') || (!touch.mode && mouse.click),
+    attackHeld: act('attack') || mouse.down || !!touch.aim,
     aimX: aim ? aim.x : null,
     aimY: aim ? aim.y : null,
   };

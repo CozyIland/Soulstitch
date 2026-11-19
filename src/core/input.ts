@@ -28,16 +28,23 @@ export const K = (...c: string[]): boolean => c.some((k) => keys.has(k));
 export const KP = (...c: string[]): boolean => c.some((k) => pressed.has(k));
 export const ok = (): boolean => KP('Enter', 'NumpadEnter', 'Space');
 
+/** Zuletzt gedrückte Taste in diesem Frame (zum Belegen von Tasten) */
+export const lastKey = { code: null as string | null };
+/** Wird von bindings.ts gesetzt: ist die Taste einer Aktion zugeordnet? (dann keine Browser-Standardaktion) */
+export const hooks = { bound: (_code: string): boolean => false };
+
 /** Am Ende jedes Frames: Einmal-Ereignisse zurücksetzen. */
 export function endFrame(): void {
   pressed.clear();
+  lastKey.code = null;
   mouse.click = false;
 }
 
 function jumpKey(): void {
   const on = touch.jumpId !== null || !!(touch.joy && touch.joy.up);
-  if (on && !keys.has('Space')) { pressed.add('Space'); keys.add('Space'); }
-  if (!on) keys.delete('Space');
+  // Touch-Knöpfe melden sich als virtuelle Tasten 'v:<aktion>', unabhängig von der PC-Belegung
+  if (on && !keys.has('v:jump')) { pressed.add('v:jump'); keys.add('v:jump'); }
+  if (!on) keys.delete('v:jump');
 }
 
 const toGame = (cx: number, cy: number) => {
@@ -47,7 +54,8 @@ const toGame = (cx: number, cy: number) => {
 
 export function initInput(): void {
   addEventListener('keydown', (e) => {
-    if (['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Enter'].includes(e.code)) e.preventDefault();
+    if (['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Enter', 'Tab'].includes(e.code) || hooks.bound(e.code)) e.preventDefault();
+    lastKey.code = e.code;
     if (!keys.has(e.code)) pressed.add(e.code);
     keys.add(e.code);
     initAudio();
@@ -72,12 +80,12 @@ export function initInput(): void {
       mouse.x = q.x; mouse.y = q.y; mouse.click = true;
       if (G.scene !== 'fight') continue;
       const btn = touch.buttons.find((b) => Math.hypot(q.x - b.x, q.y - b.y) < b.r + 8);
-      if (btn?.id === 'pause') pressed.add('Escape');
-      else if (btn?.id === 'dodge') pressed.add('ShiftLeft');
+      if (btn?.id === 'pause') pressed.add('v:pause');
+      else if (btn?.id === 'dodge') pressed.add('v:dodge');
       else if (btn?.id === 'jump') { touch.jumpId = t.identifier; jumpKey(); }
-      else if (btn?.id === 'block') { touch.blockId = t.identifier; keys.add('KeyK'); }
+      else if (btn?.id === 'block') { touch.blockId = t.identifier; keys.add('v:block'); }
       else if (q.x < W / 2) { if (!touch.joy) touch.joy = { id: t.identifier, ox: q.x, oy: q.y, dx: 0, up: false }; }
-      else if (!touch.aim) { touch.aim = { id: t.identifier, x: q.x, y: q.y }; pressed.add('KeyJ'); } // Angriff
+      else if (!touch.aim) { touch.aim = { id: t.identifier, x: q.x, y: q.y }; pressed.add('v:attack'); } // Angriff
     }
   }, { passive: false });
 
@@ -103,7 +111,7 @@ export function initInput(): void {
       if (touch.joy && t.identifier === touch.joy.id) touch.joy = null;
       if (touch.aim && t.identifier === touch.aim.id) touch.aim = null;
       if (t.identifier === touch.jumpId) touch.jumpId = null;
-      if (t.identifier === touch.blockId) { touch.blockId = null; keys.delete('KeyK'); }
+      if (t.identifier === touch.blockId) { touch.blockId = null; keys.delete('v:block'); }
     }
     jumpKey();
   };

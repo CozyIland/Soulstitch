@@ -4,7 +4,7 @@ import { test, expect } from '@playwright/test';
 import type { Page } from '@playwright/test';
 
 interface DbgState {
-  scene: string; phase: string; n: number; name: string; hp: number; php: number; pb: number;
+  scene: string; phase: string; n: number; name: string; hp: number; php: number; pb: number; py: number;
   glad: { state: string; atk: string | null; x: number } | null;
   run: { i: number } | null; last: { result: string } | null;
 }
@@ -137,6 +137,47 @@ test.describe('Steuerung', () => {
     await waitScene(page, 'help');
     await page.keyboard.press('Escape');
     await waitScene(page, 'abyss');
+  });
+});
+
+test.describe('Tasten belegen', () => {
+  test('Springen auf U legen: U springt, W nicht mehr – bleibt nach Neuladen', async ({ page }) => {
+    await tap(page, 440, 258);           // Steuerung
+    await waitScene(page, 'help');
+    await page.keyboard.press('KeyT');   // Tasten ändern
+    await waitScene(page, 'keys');
+    await tap(page, 262 + 62, 64 + 2 * 30 + 12); // Springen, 1. Platz (W)
+    await page.waitForTimeout(80);
+    await page.keyboard.press('KeyU');
+    await page.waitForTimeout(80);
+    const keys = await page.evaluate(() => JSON.parse(localStorage.getItem('soulstitch-keys') ?? 'null'));
+    expect(keys.jump[0]).toBe('KeyU');
+    await page.reload();
+    await waitScene(page, 'title');
+    await call(page, 'abilities', ['jump']);
+    await call(page, 'god', true);
+    await call(page, 'fight', 'rekrut');
+    await waitPhase(page, 'play');
+    const y = async () => (await dbg(page)).py;
+    await page.keyboard.press('KeyW');
+    await page.waitForTimeout(120);
+    expect(await y()).toBe(300);         // W springt nicht mehr
+    await page.keyboard.down('KeyU');
+    await page.waitForTimeout(150);
+    expect(await y()).toBeLessThan(300); // U springt
+    await page.keyboard.up('KeyU');
+  });
+
+  test('Standard stellt die Belegung wieder her', async ({ page }) => {
+    await page.evaluate(() => localStorage.setItem('soulstitch-keys', JSON.stringify({ jump: ['KeyU', null] })));
+    await page.reload();
+    await waitScene(page, 'title');
+    await tap(page, 440, 258);
+    await page.keyboard.press('KeyT');
+    await waitScene(page, 'keys');
+    await tap(page, 320 - 75, 306);      // Standard
+    const keys = await page.evaluate(() => JSON.parse(localStorage.getItem('soulstitch-keys') ?? 'null'));
+    expect(keys.jump).toEqual(['KeyW', 'Space']);
   });
 });
 

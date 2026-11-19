@@ -1,0 +1,11 @@
+{
+  "actions": [
+    { "id": "left",   "name": "Nach links",  "keys": ["KeyA", "ArrowLeft"] },
+    { "id": "right",  "name": "Nach rechts", "keys": ["KeyD", "ArrowRight"] },
+    { "id": "jump",   "name": "Springen",    "keys": ["KeyW", "Space"] },
+    { "id": "attack", "name": "Schlagen",    "keys": ["KeyJ", "KeyX"] },
+    { "id": "block",  "name": "Blocken",     "keys": ["KeyK", "KeyS"] },
+    { "id": "dodge",  "name": "Ausweichen",  "keys": ["ShiftLeft", "KeyL"] },
+    { "id": "pause",  "name": "Pause",       "keys": ["KeyP", null] }
+  ]
+}

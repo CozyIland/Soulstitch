@@ -9,6 +9,7 @@ import { registerScene, updateScene, drawScene } from './game/scenes.ts';
 import { fightScene } from './game/fight.ts';
 import { abyssScene, descentScene, possessScene } from './scenes/abyss.ts';
 import { titleScene, introScene, victoryScene, helpScene } from './scenes/title.ts';
+import { keysScene } from './scenes/keys.ts';
 import { initDebug } from './debug.ts';
 
 registerScene('title', titleScene);
@@ -19,6 +20,7 @@ registerScene('possess', possessScene);
 registerScene('fight', fightScene);
 registerScene('victory', victoryScene);
 registerScene('help', helpScene);
+registerScene('keys', keysScene);
 
 initInput();
 initFullscreen();
