@@ -1,5 +1,5 @@
 // Zustand, den mehrere Teile des Spiels gemeinsam nutzen.
-export type SceneName = 'title' | 'intro' | 'abyss' | 'descent' | 'possess' | 'fight' | 'victory';
+export type SceneName = 'title' | 'intro' | 'abyss' | 'descent' | 'possess' | 'fight' | 'victory' | 'help';
 
 export interface Particle {
   x: number; y: number; vx: number; vy: number;

@@ -8,7 +8,7 @@ import { resize } from './render/backgrounds.ts';
 import { registerScene, updateScene, drawScene } from './game/scenes.ts';
 import { fightScene } from './game/fight.ts';
 import { abyssScene, descentScene, possessScene } from './scenes/abyss.ts';
-import { titleScene, introScene, victoryScene } from './scenes/title.ts';
+import { titleScene, introScene, victoryScene, helpScene } from './scenes/title.ts';
 import { initDebug } from './debug.ts';
 
 registerScene('title', titleScene);
@@ -18,6 +18,7 @@ registerScene('descent', descentScene);
 registerScene('possess', possessScene);
 registerScene('fight', fightScene);
 registerScene('victory', victoryScene);
+registerScene('help', helpScene);
 
 initInput();
 initFullscreen();

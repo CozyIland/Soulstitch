@@ -24,6 +24,8 @@ let pSel=0,pCol=0,oSel=0,pileMsg='',pileBuy=-1;
 const ROW=(i:number)=>({x:232,y:62+i*31,w:178,h:28}),CARD=(i:number)=>({x:420,y:62+i*44,w:210,h:42}),GOB={x:420,y:302,w:210,h:44};
 /** Fähigkeiten-Chips links unten */
 const CHIP=(i:number)=>({x:14+i*70,y:282,w:64,h:20});
+/** Knopf zur Steuerungs-Übersicht */
+const HELP={x:240,y:318,w:170,h:26};
 const ARCH:Record<AbilityId,{n:string;icon:string;col:string}>={block:{n:'Block',icon:'⛨',col:'#e8c060'},jump:{n:'Sprung',icon:'⤒',col:'#7ad07a'},dodge:{n:'Dash',icon:'»',col:'#6fd8ff'}};
 /** Fähigkeit vorziehen: sie wird bevorzugt aktiv (bei Limit 1: die einzige) */
 function pickAbility(id:AbilityId){
@@ -63,7 +65,7 @@ function drawPileUI(al:number){
     const label=a.icon+' '+a.n+(lv===2?' II':lv?'':' '+s.arch[id]+'/'+BALANCE.archetype.level1);
     if(on)ptxt(label,r.x+r.w/2,r.y+5,'#140e10','center',10,true);else txt(label,r.x+r.w/2,r.y+4,lv?a.col:'#6e625c','center',10,true)});
   txt('Herzen '+s.hp+'   Tempo '+pct(s.speed/BALANCE.player.speed)+'   Sprung '+pct(s.jmp),16,307,'#8fe6ff','left',10.5,true);
-  txt('Schaden '+pct(s.dmg)+'   Schlag '+pct(s.fr)+'   Reichweite '+pct(reach(s)),16,322,'#8fe6ff','left',10.5,true);
+  txt('Schaden '+pct(s.dmg)+'   Schlag '+pct(s.fr)+'   Reichw. '+pct(reach(s)),16,322,'#8fe6ff','left',10.5,true);
   txt('Größe '+s.size+' · Gewicht '+s.weight+(s.lvl.jump===2?' · Doppelsprung':s.lvl.block===2?' · leichte Parade':s.lvl.dodge===2?' · schneller Dash':''),16,337,'#9a8a80','left',10,true);
   // Plätze
   SLOTS.forEach((sl,i)=>{const r=ROW(i),sel=i===pSel,q=PART[prof.save.eq[sl.k]];
@@ -95,6 +97,8 @@ function drawPileUI(al:number){
   txt(prof.test?testLabel():'Neuer Lauf · '+RUN_FIGHTS.length+' Kämpfe',GOB.x+GOB.w/2,GOB.y+25,'#d8f4ff','center',prof.test?9.5:10.5);
   if(prof.test){txt('‹',GOB.x+14,GOB.y+8,'#ffd878','center',24,true);txt('›',GOB.x+GOB.w-14,GOB.y+8,'#ffd878','center',24,true)}
   if(!touch.mode)txt('W/S · A/D · Enter · 1–3: Fähigkeit',232,284,'#6e625c','left',10);
+  rr(ctx,HELP.x,HELP.y,HELP.w,HELP.h,6);ctx.fillStyle='rgba(16,10,12,.8)';ctx.fill();ctx.strokeStyle='rgba(240,224,176,.35)';ctx.lineWidth=1.2;ctx.stroke();
+  txt('?  Steuerung'+(touch.mode?'':' (H)'),HELP.x+HELP.w/2,HELP.y+7,'#f0e0b0','center',11,true);
   ctx.globalAlpha=1;
 }
 function updPile(){
@@ -112,6 +116,7 @@ function updPile(){
     if(KP('KeyA','ArrowLeft','Escape')){pCol=0;syncOpt();beep(250,.03)}
   }
   for(const [k,i] of [['Digit1',0],['Digit2',1],['Digit3',2]] as [string,number][])if(KP(k))pickAbility(ABILITY_IDS[i]);
+  if(KP('KeyH')||(mouse.click&&inR(HELP,mouse.x,mouse.y))){beep(520,.06);go('help','abyss');return}
   if(mouse.click){const x=mouse.x,y=mouse.y;
     ABILITY_IDS.forEach((id,i)=>{if(inR(CHIP(i),x,y))pickAbility(id)});
     for(let i=0;i<7;i++)if(inR(ROW(i),x,y)){if(pSel!==i){pSel=i;syncOpt();beep(300,.03)}pCol=1}

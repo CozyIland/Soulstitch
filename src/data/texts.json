@@ -49,5 +49,58 @@
   "controls": {
     "keyboard": "A/D: laufen · W/Leertaste: springen · J/Maus: schlagen · K/S/rechte Maus: blocken · Shift/L: ausweichen",
     "touch": "Links ziehen: laufen, nach oben: springen · Rechts tippen: schlagen · Knöpfe: Block, Dash, Sprung"
+  },
+  "help": {
+    "title": "Steuerung",
+    "head": [
+      "",
+      "PC",
+      "Handy (quer halten)"
+    ],
+    "rows": [
+      [
+        "Laufen",
+        "A / D",
+        "links ziehen"
+      ],
+      [
+        "Schlagen (3er-Combo)",
+        "J · linke Maustaste",
+        "rechts antippen"
+      ],
+      [
+        "Blocken (halten)",
+        "K · S · rechte Maustaste",
+        "BLOCK halten"
+      ],
+      [
+        "Springen",
+        "W · Leertaste",
+        "links nach oben ziehen · SPRUNG"
+      ],
+      [
+        "Ausweichen",
+        "Shift · L",
+        "DASH"
+      ],
+      [
+        "Fähigkeit wählen (Abgrund)",
+        "Tasten 1 · 2 · 3",
+        "Chips links unten"
+      ],
+      [
+        "Menüs",
+        "W/S · A/D · Enter",
+        "antippen"
+      ]
+    ],
+    "tips": [
+      "Gelbes „!“ = blockbar.  Rotes „!!“ = nicht blockbar: springen oder ausweichen.",
+      "Block kurz vor dem Treffer heben = Parade: der Gegner taumelt.",
+      "Nach jedem Angriff erholt sich der Gegner kurz – dann zuschlagen.",
+      "Dein Körper bestimmt die Fähigkeit: Schildarme = Block, Froschbeine = Sprung, Läuferbeine = Ausweichen.",
+      "Neue Teile: einmal antippen zum Auswählen, nochmal zum Kaufen."
+    ],
+    "back": "Antippen oder Enter: zurück"
   }
 }

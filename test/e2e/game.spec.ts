@@ -53,14 +53,14 @@ test.afterEach(() => expect(errors).toEqual([]));
 
 test.describe('Ablauf', () => {
   test('Titel → Intro → Abgrund', async ({ page }) => {
-    await tap(page, 260, 258); // „Spielen“
+    await tap(page, 200, 258); // „Spielen“
     await waitScene(page, 'intro');
     for (let i = 0; i < 4; i++) await tap(page, 320, 200);
     await waitScene(page, 'abyss');
   });
 
   test('Teil kaufen und anlegen wird gespeichert', async ({ page }) => {
-    await tap(page, 260, 258);
+    await tap(page, 200, 258);
     for (let i = 0; i < 4; i++) await tap(page, 320, 200);
     await waitScene(page, 'abyss');
     await call(page, 'bones', 100);
@@ -99,7 +99,7 @@ test.describe('Ablauf', () => {
   });
 
   test('Testmodus speichert nichts und zeigt Debug-Werkzeuge', async ({ page }) => {
-    await tap(page, 380, 258); // „Testmodus“
+    await tap(page, 320, 258); // „Testmodus“
     await waitScene(page, 'abyss');
     await expect(page.locator('#dbg')).toBeVisible();
     await tap(page, 300, 62 + 10);           // Kopf
@@ -122,6 +122,21 @@ test.describe('Ablauf', () => {
     expect(s.best).toBe(4);
     expect(s.bones).toBe(33 + 7);
     expect(s.eq.kopf).toBe('k2');
+  });
+});
+
+test.describe('Steuerung', () => {
+  test('Übersicht aus dem Startmenü und dem Abgrund, zurück an dieselbe Stelle', async ({ page }) => {
+    await tap(page, 440, 258); // „Steuerung“
+    await waitScene(page, 'help');
+    await tap(page, 320, 200);
+    await waitScene(page, 'title');
+    await call(page, 'pile');
+    await waitScene(page, 'abyss');
+    await tap(page, 320, 331); // „? Steuerung“
+    await waitScene(page, 'help');
+    await page.keyboard.press('Escape');
+    await waitScene(page, 'abyss');
   });
 });
 
@@ -166,7 +181,7 @@ test.describe('Körper und Archetypen', () => {
   });
 
   test('Fähigkeit im Abgrund wählen (Limit 1)', async ({ page }) => {
-    await tap(page, 260, 258);
+    await tap(page, 200, 258);
     for (let i = 0; i < 4; i++) await tap(page, 320, 200);
     await waitScene(page, 'abyss');
     await call(page, 'equip', { armL: 'a4', armR: 'a4' }); // Block + Ausweichen verfügbar
@@ -281,7 +296,7 @@ test.describe('Handy', () => {
   };
 
   test('Touch: rechts tippen schlägt zu', async ({ page }) => {
-    const t = await point(page, 260, 258);
+    const t = await point(page, 200, 258);
     await page.touchscreen.tap(t.x, t.y);
     await waitScene(page, 'intro');
     await call(page, 'fight', 'rekrut');
