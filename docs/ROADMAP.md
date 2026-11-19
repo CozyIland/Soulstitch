@@ -1,131 +1,216 @@
-# Soulstich – Roadmap
+# Soulstitch – Roadmap
 
-> Quelle: 7 Sprachnachrichten vom 19.11.2026 (Transkripte: `Soulstich_Transkripte.txt`).
-> Die Engine ist noch nicht festgelegt, deshalb ist die Roadmap engine-neutral.
+> **Stand:** 19.11.2026 · **2D**, Seitenansicht
+> **Quellen:** die 7 Sprachnachrichten ([`sprachmemos/`](sprachmemos/README.md)), die Lore-Notiz ([`notizen/`](notizen/2026-11-19_lore-seelen-und-transzendenz-des-gottes.md)) und der spielbare Prototyp `soulstitch.html`.
+> Die vorige, technikunabhängige Fassung steht in der Git-Historie (Commit `4161ca5`).
 
-## Kurzfassung
+---
 
-Ein Gott, der einmal ein Mensch war, hat alle Seelen seines Reiches in sich aufgenommen. Die Bewohner sind jetzt zusammengenähte Leichen, in denen eine Seele steckt. Der Spieler ist seine erste **künstliche Seele**: Der Gott will sie durch Kämpfe zum perfekten, willenlosen Gefäß erziehen.
+## 1. Worum es geht
 
-Die künstliche Seele sieht die **Seelenessenz**, die aus jedem genähten Körper tropft, und kann sie einsammeln. Sie ist Währung, Zahlungsmittel für Verbündete und am Ende die einzige Waffe gegen den Gott.
+**Die Welt.** Eine Seele braucht einen Körper. Ohne Körper verliert sie langsam ihre **Seelenessenz** und vergeht nach einigen Tagen endgültig. Geübte Wanderer halten das höchstens ein paar Stunden bis zwei Tage durch, danach geht zu viel verloren. In einem Körper kann sich eine Seele bis zu einem gewissen Grad erholen. Das gilt als Naturgesetz. Lebende Wesen können die Essenz nicht sehen, auch der Gott nicht.
 
-Gekämpft wird nur im Nahkampf, mit Körpern aus Leichenteilen. Am Anfang kann jeder Körper nur Angriff plus eine Bewegungsfähigkeit.
+**Der Gott.** Er war ein Mensch, der Sohn des alten Gott-Imperators. In Experimenten fand er zwei Dinge heraus:
+- Kombinierte Seelen halten außerhalb eines Körpers länger durch, aber nicht ewig. Sie müssen dafür zeitweise in einen Körper zurück.
+- Eine Seele kann eine andere vollständig beherrschen, wenn sie mit einer Seele verschmolzen ist, die ihren Charakter schon fast verloren hat.
 
-## Kernregeln (Gameplay)
+Er manipulierte die Anführer der vier Königreiche, mit ihm seinen Vater zu stürzen. Danach nahm er alle Seelen des Reiches in sich auf, ähnlich wie in Fullmetal Alchemist. Die vier Anführer richtete er als **Conduits** ein, als Körper, durch die die Seelen zirkulieren. Seitdem existiert er körperlos und kann unbegrenzt viele Seelen aufnehmen und beherrschen. Alle Bewohner sind zusammengenähte Leichen mit einer Seele darin, die meisten ohne Erinnerung. Ein paar hält er bei Erinnerung, weil er an ihnen hängt. Das sind die Figuren, mit denen man reden kann.
 
-- **Archetypen:** Blocken, Springen, Ausweichen. Am Anfang gibt es Angriff plus genau eine davon. Durch Progression werden mehrere gleichzeitig möglich.
-- **Körperteile:** Größe und Gewicht bestimmen unter anderem die Lebenspunkte. Teile werden zusammengenäht.
-- **Nur Nahkampf**, bis die Magie freigeschaltet ist (nach dem ersten kompletten Durchgang). Erst dann gibt es Projektile.
-- **Währung:** 10 Shards = 1 Seelenessenz. Jeder Gegner lässt Währung fallen.
-- **Run-Ablauf:** Kampf 1 ist immer der Vater (1 Essenz). Kampf 2–4 sind Gladiatoren (je 1 Shard). Kampf 5 gibt 2 (Einheit offen). Am Ende kommt ein Endgegner.
-- **Mentoren** bringen später Grundfähigkeiten bei, die nicht vom Körper abhängen.
-- **Ziel:** Jede Story-Figur soll auch eine spielerische Funktion haben.
+**Du.** Der Spieler ist die erste **künstliche Seele**. Schon im allerersten Run sagt der Vater: *„He actually did it.“* Der Gott will sie durch Kämpfe zum perfekten Gefäß ohne eigenen Charakter erziehen, das ohne Körper existieren und trotzdem Körper steuern kann. Weil sie nicht menschlich ist, sieht sie die Essenz, die aus jedem genähten Körper tropft, und kann sie einsammeln. Das hat der Gott nicht einkalkuliert. Die Essenz ist:
+- Währung,
+- Bezahlung für Verbündete: Je mehr Essenz ein Untoter bekommt, desto unabhängiger wird er vom Gott,
+- am Ende die einzige Waffe gegen den Gott.
 
-### Figuren im Abgrund (Hub)
+---
 
-| Figur | Funktion | Kommt |
+## 2. Kernregeln
+
+| Bereich | Regel |
+|---|---|
+| **Kampf** | Nur Nahkampf, bis die Magie freigeschaltet ist (Akt II). Erst dann gibt es Projektile. |
+| **Archetypen** | Blocken, Springen, Ausweichen. Am Anfang Angriff plus genau eine davon. Durch Fortschritt werden mehrere gleichzeitig möglich. |
+| **Körper** | Die Körperteile bestimmen die Fähigkeiten. Größe und Gewicht bestimmen Lebenspunkte und Tempo. |
+| **Mentoren** | Bringen später Grundfähigkeiten bei, die nicht vom Körper abhängen. |
+| **Währung** | 10 Shards = 1 Seelenessenz. Jeder Gegner lässt Essenz fallen, die nur du siehst. |
+| **Run** | Kampf 1 ist immer der Vater, danach Gladiatoren, am Schluss ein Endgegner. |
+| **Hub** | Der Abgrund unter dem Kolosseum. Mit Essenz steigst du Stufe für Stufe nach oben und triffst neue Figuren. |
+| **Figuren** | Jede Story-Figur hat auch eine spielerische Funktion. |
+
+### Figuren im Abgrund
+
+| Figur | Funktion | Ab |
 |---|---|---|
-| Mulchi (Leichensammelwurm) | Sucht gegen Essenz Teile für einen Archetyp, später ganze Körper. Wächst mit jeder Fütterung. | Als Erstes |
-| Leichengräber | Holt bereits benutzte Teile zurück, später ganze Körper | Erster Aufstieg |
-| Leichenhaus | Teile einlagern, jeweils nur einmal verwendbar | Danach |
-| Einbalsamierer (Idee) | Macht Teile und Körper mehrfach verwendbar | Später |
-| Der Vater | Immer der erste Kampf, Comic Relief, erzählt jedes Mal etwas | Jeder Run |
-| Der Magier | Erster Endgegner, danach Quest-Geber, schaltet Magie frei | Ende Akt I |
-| Die vier Könige (Conduits) | Endgegner ab Akt II, Hauptziele in Akt III | Akt II |
+| **Mulchi** (Leichensammelwurm) | Sucht gegen Essenz Teile für einen Archetyp, später ganze Körper. Wächst sichtbar mit jeder Fütterung. | Start |
+| **Leichengräber** | Holt schon benutzte Teile zurück, später ganze Körper. | 1. Aufstieg |
+| **Leichenhaus** | Teile einlagern, jeweils nur einmal verwendbar. | danach |
+| **Einbalsamierer** | Macht Teile oder ganze Körper mehrfach verwendbar. | später |
+| **Gefangene** | Kämpfen im Run gegen dich, reden im Abgrund mit dir. Essenz ist der Preis für ihre Hilfe. | laufend |
+| **Der Vater** | Immer der erste Kampf, Comic Relief, sagt jedes Mal etwas. | jeder Run |
+| **Der Magier** | Erster Endgegner, danach Quest-Geber, schaltet die Magie frei. | Ende Akt I |
+| **Die vier Könige** | Endgegner in Akt II, Hauptziele in Akt III. | Akt II |
 
-### Story-Akte
+### Story in drei Akten
 
-1. **Akt I – Erwachen im Abgrund** (ca. 5–7 Durchgänge): Mulchi und der Leichengräber kommen, Aufstieg im Abgrund, der Magier ist der erste Endgegner.
-2. **Akt II – Magie:** Der Magier schaltet Magie frei, die Gegner kontern mit Magie, die Könige werden Endgegner. Der Ausbruch gelingt nur halb, bis Mulchi stirbt und dich befreit.
-3. **Akt III – Endgame:** Vier Conduit-Runs. Befreite Figuren verkürzen die Runs. Danach der Vater im künstlichen Körper, dann der Endkampf, und alle Seelen werden frei.
+1. **Akt I – Erwachen im Abgrund** (etwa 5–7 Runs): Mulchi und der Leichengräber kommen dazu, der Aufstieg im Abgrund beginnt, der Magier ist der Endgegner.
+2. **Akt II – Magie:** Der Magier zeigt dir die Magie. Der Gott kontert, indem auch die Gegner Magie bekommen. Die Könige werden Endgegner. Der Ausbruch aus der Kontrolle des Gottes gelingt nur halb, bis Mulchi riesig aus dem Boden bricht, vom Gott getötet wird und dich mit der frei werdenden Energie befreit.
+3. **Akt III – Endgame:** Vier Runs gegen die Conduits, der Gott macht alle Gegner härter. Jeder zerstörte Conduit gibt mehr Energie und befreit Figuren, deren Kämpfe dann wegfallen. Danach kommt der Vater in seinem künstlichen Körper, dann der Endkampf gegen den Gott. Am Ende finden alle Seelen Frieden, auch du.
 
-## Roadmap
+---
 
-Jede Phase endet mit etwas Spielbarem.
+## 3. Technik
 
-### Phase 0 – Grundgerüst
-- [ ] Engine und Perspektive festlegen (2D oder 3D), Repository mit Versionsverwaltung anlegen
-- [ ] Datengetrieben: Körperteile, Gegner, Figuren und Dialoge als Daten-Dateien
-- [ ] Spielzustände: `Hub` → `Run` → `Kampf` → `Run-Ende` → `Hub`
-- [ ] Debug-Werkzeuge: Essenz geben, Kampf überspringen, unverwundbar
+**Empfehlung: im Browser bleiben, aber als richtiges Projekt statt als eine einzige Datei.**
 
-**Fertig, wenn** man zwischen leeren Hub- und Arena-Szenen wechseln kann.
+- **Spielbar per Link:** Das Spiel läuft auf PC und Handy ohne Installation, und das funktioniert heute schon.
+- **Testbar ohne dich:** Claude kann im Browser jede Änderung selbst automatisch testen und Bildschirmfotos machen.
+- **Nichts geht verloren:** Grafik, Todessequenz, Leichenhaufen und Touch-Steuerung lassen sich direkt weiterverwenden.
+- **Aufbau:** TypeScript und Vite, eigener 2D-Canvas-Renderer wie bisher. Inhalte wie Teile, Gegner, Dialoge und Belohnungen kommen in JSON-Dateien. So können auch Leute ohne Programmierkenntnisse Inhalte ändern.
+- **Veröffentlichen:** über GitHub Pages, ein fester öffentlicher Link mit echtem Vollbild auf Android und Installation auf dem iPhone-Homebildschirm.
 
-### Phase 1 – Kampf-Prototyp
-- [ ] Spielersteuerung, Nahkampfangriff mit Trefferzonen, Schaden und Lebenspunkte
-- [ ] Blocken, Springen und Ausweichen als einzelne, austauschbare **Fähigkeits-Module**
-- [ ] Ein Gladiator mit einfacher KI in einer Arena
-- [ ] Treffer-Feedback: Pause beim Treffer, Rückstoß, Sound-Platzhalter
+Die Alternative wäre Godot: ein guter visueller Editor, aber Claude kann dort nicht selbst testen, und der Prototyp müsste komplett neu gebaut werden. → **Entscheidung 1** bei den offenen Fragen.
+
+---
+
+## 4. Was wird aus dem Prototyp?
+
+| Bleibt | Wird umgebaut | Fällt weg oder wird verschoben |
+|---|---|---|
+| Grafikstil, Arena, Gruft, Seelen-Geist | Schießen → **Nahkampf** (Projektil-Code wird in Akt II zur Magie) | 30 feste Bosse → Run aus Vater, Gladiatoren und Endgegner |
+| Todessequenz: Seele steigt auf, YOU DIED, Abstieg, Körper wählen, Inbesitznahme | 15 Teile mit Boni → **Archetypen und Größe/Gewicht** | Knochen als Währung → **Shards und Essenz** |
+| Leichenhaufen als Ort, an dem man einen Körper wählt | Leichenhaufen → **Abgrund-Hub** mit Figuren und Stufen | |
+| Touch-Steuerung, Vollbild, Testmodus | Boss-Angriffsmuster → Nahkampf-Gegner mit Telegraphen | |
+
+---
+
+## 5. Roadmap
+
+Jede Phase endet mit etwas Spielbarem. Die Story-Arbeit läuft parallel dazu (Abschnitt 6).
+
+### Phase 0 – Fundament
+- [ ] Projekt umziehen: Module statt einer Datei, TypeScript, Vite, automatische Tests im Browser
+- [ ] Inhalte als Daten: Körperteile, Gegner, Run-Aufbau, Belohnungen, Dialoge
+- [ ] Spielzustände: `Abgrund` → `Run` → `Kampf` → `Run-Ende` → `Abgrund`
+- [ ] Speicherstand mit Versionsnummer, damit alte Spielstände nach Updates weiter funktionieren
+- [ ] Debug-Werkzeuge aus dem Testmodus ausbauen: Essenz geben, Kampf überspringen, unverwundbar, Akt wählen
+- [ ] Öffentlicher Link über GitHub Pages
+
+**Fertig, wenn** der heutige Prototyp im neuen Projekt läuft und per Link spielbar ist.
+
+### Phase 1 – Nahkampf
+- [ ] Angriff mit Trefferzonen, Combo aus 2–3 Schlägen, Schaden und Lebenspunkte
+- [ ] **Blocken, Springen, Ausweichen** als einzelne, austauschbare Fähigkeits-Module
+- [ ] Treffer-Feedback: kurze Pause beim Treffer, Rückstoß, Aufblitzen, Sound-Platzhalter
+- [ ] Ein Gladiator mit einfacher KI und erkennbar angekündigten Angriffen
+- [ ] Touch-Steuerung für den Nahkampf
 
 **Fertig, wenn** ein Kampf gegen einen Gladiator mit jeder der drei Fähigkeiten Spaß macht.
 
-### Phase 2 – Körper und Nähen
-- [ ] Datentyp Körperteil: Platz (Kopf, Torso, Arme, Beine), Archetyp, Größe, Gewicht
-- [ ] Ein Körper berechnet aus seinen Teilen Werte und Fähigkeiten
-- [ ] Fähigkeits-Limit: Angriff plus N aktive Fähigkeiten, Startwert N = 1
-- [ ] Einfacher Näh-Bildschirm vor dem Run
+### Phase 2 – Körper und Archetypen
+- [ ] Körperteil-Daten: Platz, Archetyp-Fähigkeit, Größe, Gewicht
+- [ ] Ein Körper berechnet aus seinen Teilen Werte und Fähigkeiten: Gewicht → Lebenspunkte und Tempo
+- [ ] **Fähigkeits-Limit:** Angriff plus N Fähigkeiten, am Anfang N = 1
+- [ ] Körperwahl im Leichenhaufen auf Archetypen umbauen, die bestehende Szene wird weiterverwendet
 
-**Fertig, wenn** sich zwei verschiedene Körper spürbar anders spielen.
+**Fertig, wenn** sich ein Block-Körper und ein Sprung-Körper spürbar anders spielen.
 
-### Phase 3 – Run-Schleife und Währung
-- [ ] Run-Ablauf: der Vater zuerst, Endgegner am Schluss
-- [ ] Belohnungstabelle pro Kampf (Shards / Essenz, 10 : 1), leicht anpassbar
-- [ ] Essenz-Partikel, die nur die Spielfigur sieht und einsammelt
-- [ ] Tod oder Sieg → Auswertung → zurück in den Hub
-- [ ] Der Magier als erster Endgegner, nur Nahkampf
+### Phase 3 – Run und Währung
+- [ ] Run-Ablauf: **Vater** → Gladiatoren → Endgegner
+- [ ] Der Vater als Comic-Relief-Kampf, im allerersten Run mit *„He actually did it“*
+- [ ] Belohnungstabelle pro Kampf: Shards und Essenz im Verhältnis 10 : 1, leicht anpassbar
+- [ ] **Essenz-Tropfen**, die nur die Seele sieht und einsammelt
+- [ ] **Der Magier** als erster Endgegner, nur Nahkampf
+- [ ] Run-Ende mit Auswertung, Todessequenz, zurück in den Abgrund
 
 **Fertig, wenn** ein kompletter Run spielbar ist und die Essenz danach gutgeschrieben wird.
 
-### Phase 4 – Abgrund und Meta-Progression
-- [ ] Speichersystem: Essenz, Freischaltungen, Story-Flags, eingelagerte Teile, Verlauf benutzter Teile
-- [ ] Abgrund mit Höhenstufen, die über gesammelte Essenz freigeschaltet werden
-- [ ] Mulchi, Leichengräber, Leichenhaus, Einbalsamierer
-- [ ] Fähigkeits-Limit erhöhen, Mentoren für körperunabhängige Grundfähigkeiten
+### Phase 4 – Abgrund und Fortschritt
+- [ ] Der Abgrund als begehbarer Hub mit Höhenstufen, die mit Essenz freigeschaltet werden
+- [ ] **Mulchi:** füttern, Teile für einen Archetyp suchen lassen, sichtbares Wachstum
+- [ ] **Leichengräber:** benutzte Teile zurückholen, später ganze Körper
+- [ ] **Leichenhaus:** Teile einlagern, einmal verwendbar; später **Einbalsamierer** für mehrfach verwendbare Teile
+- [ ] Fähigkeits-Limit erhöhen, **Mentoren** für körperunabhängige Fähigkeiten
 
-**Fertig, wenn** es nach jedem Run etwas Sinnvolles auszugeben gibt.
+**Fertig, wenn** es nach jedem Run etwas Sinnvolles zu kaufen gibt.
 
 ### Phase 5 – Dialoge und Story-Zustand
-- [ ] Dialogsystem aus Daten, mit Bedingungen (Run-Anzahl, Abgrund-Höhe, Flags)
+- [ ] Dialogsystem aus Daten, mit Bedingungen wie Run-Anzahl, Abgrund-Höhe und Story-Flags
 - [ ] Wechselnde Sprüche des Vaters zu Beginn jedes Runs
-- [ ] Gefangene Figuren im Abgrund, Essenz als Bezahlung für Hilfe
-- [ ] Zentrales Ereignis-System für Story-Flags
+- [ ] Gefangene im Abgrund, die gegen Essenz helfen
+- [ ] Zentrale Story-Flags: Run-Anzahl, Abgrund-Höhe, Akt
 
-**Fertig, wenn** Akt I bis zum Gespräch mit dem Magier erzählt werden kann.
+**Fertig, wenn** Akt I bis zum Gespräch mit dem Magier erzählt wird.
 
-### Phase 6 – Magie (Akt II)
+> ### ★ Meilenstein: Akt I als spielbare Demo
+> Komplett spielbar vom ersten Erwachen bis zum Magier. Damit lässt sich das Spiel Mitstreitern, Musikern und Testspielern zeigen.
+
+### Phase 6 – Akt II: Magie
 - [ ] Magie in Körperteile einfließen lassen, als neue Fähigkeits-Module
-- [ ] Projektil-System
-- [ ] Magie-Varianten der Gegner
+- [ ] Projektile, aufbauend auf dem Schuss-Code aus dem Prototyp
+- [ ] Magie-Varianten aller Gegner
 - [ ] Die vier Könige als Endgegner
-- [ ] Quest des Magiers, Wachstumsstufen von Mulchi, Zwischensequenz zum Ausbruch
+- [ ] Quest des Magiers, Wachstumsstufen von Mulchi, Zwischensequenz zum Ausbruch und zu Mulchis Tod
 
 **Fertig, wenn** der Ausbruch aus der Kontrolle des Gottes spielbar ist.
 
-### Phase 7 – Endgame und Finale (Akt III)
-- [ ] Höhere Schwierigkeit als globaler Modifikator
-- [ ] Vier Conduit-Runs. Jeder Sieg befreit Figuren und streicht ihre Kämpfe.
-- [ ] Der Vater im künstlichen Körper, der Endkampf gegen den Gott, Abspann
+### Phase 7 – Akt III: Endgame und Finale
+- [ ] Höhere Schwierigkeit als Modifikator für alle Gegner
+- [ ] Vier Conduit-Runs; jeder Sieg befreit Figuren und streicht ihre Kämpfe
+- [ ] Der Vater im künstlichen Körper
+- [ ] Endkampf gegen den körperlosen Gott, Abspann
 
 **Fertig, wenn** das Spiel von Anfang bis Ende durchspielbar ist.
 
-### Phase 8 – Feinschliff
-- [ ] Audio-System mit eigenem Musikplatz pro Boss
-- [ ] Balancing der Essenz-Ökonomie (Einnahmen pro Run gegen Kosten)
-- [ ] Benutzeroberfläche, Menüs, Einstellungen, Performance, Playtests
+### Phase 8 – Musik und Klang
+- [ ] Audio-System mit Musik-Platz pro Kampf, Überblendungen, Lautstärke-Einstellungen
+- [ ] Ein eigenes Thema pro Boss, eine eigene Stimmung für den Abgrund
+- [ ] Soundeffekte statt Platzhalter-Pieptönen
 
-## Von Anfang an mitdenken
+**Zur Frage aus Nachricht 7:** Claude kann das Audio-System bauen und Platzhalter-Klänge im Code erzeugen, aber keine fertigen Musikstücke komponieren. Für die Musik lohnt sich ein Musiker. Sinnvoll ist es, ihn spätestens zum Akt-I-Meilenstein dazuzuholen.
 
-- **Fähigkeiten als Module:** Blocken, Springen, Ausweichen, Magie und Mentor-Fähigkeiten nutzen dieselbe Schnittstelle.
-- **Inhalte als Daten:** Neue Teile, Gegner und Dialoge sollen ohne Code-Änderung hinzukommen.
+### Phase 9 – Feinschliff
+- [ ] Balancing der Essenz-Wirtschaft: Einnahmen pro Run gegen Kosten
+- [ ] Menüs, Einstellungen, Tastenbelegung, Barrierefreiheit
+- [ ] Leistung auf älteren Handys
+- [ ] Playtests
+
+---
+
+## 6. Parallel: Story und Inhalte
+
+Diese Arbeit kann laufen, während programmiert wird. Sie liefert die Daten für die Phasen.
+
+| Was | Gebraucht ab |
+|---|---|
+| Gladiatoren für Akt I: Namen, Aussehen, Angriffe | Phase 1 und 3 |
+| Sprüche des Vaters, mindestens ein paar pro Run | Phase 3 |
+| Der Magier: Kampf und Gespräche | Phase 3 und 5 |
+| Gefangene im Abgrund: wer, was sie wollen, was sie geben | Phase 5 |
+| Mentoren: wer und was sie beibringen | Phase 4 |
+| Die vier Könige: Persönlichkeit, Reich, Kampf | Phase 6 |
+| Der künstliche Körper des Vaters | Phase 7 |
+| Musikalische Richtung | ab dem Meilenstein |
+
+---
+
+## 7. Von Anfang an mitdenken
+
+- **Fähigkeiten als Module:** Blocken, Springen, Ausweichen, Magie und Mentor-Fähigkeiten haben dieselbe Schnittstelle.
+- **Inhalte als Daten:** Neue Teile, Gegner und Dialoge kommen ohne Code-Änderung dazu.
 - **Story-Flags zentral:** Run-Anzahl, Abgrund-Höhe und Akt sind die Bedingungen für fast alles.
+- **Lore als Regel nutzen:** Dass eine Seele ohne Körper Essenz verliert, kann eine Spielregel werden, siehe Frage 10.
 
-## Offene Fragen
+---
 
-1. Welche Engine, und 2D oder 3D? Welche Kameraperspektive?
+## 8. Offene Fragen
+
+1. **Technik:** Im Browser bleiben (empfohlen) oder Godot?
 2. Wie viele Kämpfe hat ein Run? Ist Kampf 5 der letzte vor dem Endgegner?
-3. Belohnungen: Nachricht 2 sagt „normale Gegner geben einen Shard, Hauptgegner eine ganze Essenz“. Nachricht 5 nennt eine Reihe pro Kampf. Gibt Kampf 5 zwei Shards oder zwei ganze?
-4. Was bekommt man von den gefangenen Figuren?
+3. **Belohnungen:** Nachricht 2 sagt „normale Gegner geben einen Shard, Hauptgegner eine ganze Essenz“. Nachricht 5 nennt eine Reihe pro Kampf. Gibt Kampf 5 zwei Shards oder zwei ganze Essenzen?
+4. Was bekommt man von den Gefangenen?
 5. Wie hoch muss man im Abgrund kommen, bevor der Magier redet? Wie viel Essenz braucht sein Plan?
 6. Wo trifft man die Mentoren, und was bringen sie bei?
 7. Wie ist der künstliche Körper des Vaters entstanden?
-8. Musik: eigenes Thema pro Boss? Wer komponiert?
+8. **Musik:** eigenes Thema pro Boss? Wer komponiert?
+9. **Endkampf:** Wie sieht ein Kampf gegen einen körperlosen Gott aus? Gegen die verschmolzenen Seelen, gegen einen letzten Körper, den er besetzt?
+10. **Essenz-Verlust als Regel:** Soll die Seele im Abgrund ohne Körper eine Zeitgrenze haben, die sich mit Fortschritt verlängert, wie bei geübten Wanderern?
+11. **Name:** Soulstitch oder Soulstich?
