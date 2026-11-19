@@ -4,6 +4,8 @@ import { SP } from '../core/constants.ts';
 import { TAU, rnd, clamp } from '../core/util.ts';
 import { G } from '../core/state.ts';
 import type { BossDef } from '../data/index.ts';
+import type { Rect } from '../core/util.ts';
+export type { Rect };
 
 export interface Player {
   x: number; y: number; vy: number; gnd: boolean; hp: number;
@@ -15,6 +17,32 @@ export interface Player {
   run: number; aim: number; jumps: number; hits: number;
   horned: boolean; hurt: boolean;
   ddx?: number; dieY?: number;
+  vx: number;         // Rückstoß, klingt ab
+  blocking: boolean; blockT: number; // Block gehalten / seit wann
+  atk: MeleeSwing | null;            // laufender Nahkampfschlag
+  combo: number;      // Index des nächsten Combo-Schlags
+  comboT: number;     // Restzeit, in der die Combo weiterläuft
+  buf: number;        // Eingabepuffer für den nächsten Schlag
+}
+
+/** Ein Nahkampfschlag: Ausholen → trifft → Erholung */
+export interface MeleeSwing {
+  i: number;          // Combo-Schritt 0..2, -1 = Luftangriff
+  t: number;          // vergangene Zeit
+  speed: number;      // Tempo-Faktor (Feuerrate-Boni)
+  hit: boolean;       // hat in diesem Schlag schon getroffen
+}
+
+export const overlap = (a: Rect, b: Rect): boolean => a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
+
+/** Der aktuelle Gegner, gleich ob Gladiator oder alter Boss: für HUD, Zielen und Nahkampftreffer. */
+export interface Foe {
+  name: string; hp: number; max: number; accent: string;
+  x: number; y: number;
+  hidden: boolean;
+  box(): Rect;
+  /** Schaden nehmen; false, wenn abgewehrt (z. B. Schild). dir = Richtung des Stoßes */
+  hurt(dmg: number, dir: number, knock: number, heavy: boolean): boolean;
 }
 
 export type BossMode = 'move' | 'tele' | 'charge' | 'leap' | 'hidden';
@@ -40,7 +68,7 @@ export type Hazard =
   | { k: 'col'; x: number; w: number; t: number; T: number; act: number; hit?: number }
   | { k: 'beam'; b: Boss; a: number; w: number; t: number; tele: number; act: number };
 
-export const world = { p: null as unknown as Player, b: null as unknown as Boss };
+export const world = { p: null as unknown as Player, b: null as unknown as Boss, foe: null as unknown as Foe };
 export const eb: EnemyShot[] = [];
 export const pb: PlayerShot[] = [];
 export const hz: Hazard[] = [];
@@ -66,7 +94,10 @@ export function burst(x: number, y: number, n: number, col: string, sp = 100): v
   }
 }
 
-/** Trefferfläche der Spielfigur: Rechteck gegen Kreis */
+/** Trefferfläche der Spielfigur für Nahkampf-Angriffe */
+export const playerBox = (p: Player): Rect => ({ x: p.x - 6, y: p.y - 34, w: 12, h: 32 });
+
+/** Trefferfläche der Spielfigur gegen Geschosse: Rechteck gegen Kreis */
 export function hitP(x: number, y: number, r: number): boolean {
   const p = world.p;
   const dx = x - clamp(x, p.x - 5, p.x + 5), dy = y - clamp(y, p.y - 30, p.y - 3);

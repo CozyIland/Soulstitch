@@ -12,11 +12,64 @@
   },
   "boss": {
     "hpPerLevel": 2,
-    "sizes": [26, 42, 62]
+    "sizes": [
+      26,
+      42,
+      62
+    ]
   },
   "rewards": {
     "base": 3,
     "perBoss": 1,
     "noHitBonus": 2
-  }
+  },
+  "melee": {
+    "reach": 34,
+    "buffer": 0.28,
+    "comboReset": 0.45,
+    "combo": [
+      {
+        "dmg": 1,
+        "startup": 0.05,
+        "active": 0.08,
+        "recovery": 0.12,
+        "knock": 50
+      },
+      {
+        "dmg": 1,
+        "startup": 0.05,
+        "active": 0.08,
+        "recovery": 0.14,
+        "knock": 50
+      },
+      {
+        "dmg": 2,
+        "startup": 0.1,
+        "active": 0.1,
+        "recovery": 0.26,
+        "knock": 170,
+        "heavy": true
+      }
+    ],
+    "air": {
+      "dmg": 1,
+      "startup": 0.04,
+      "active": 0.12,
+      "recovery": 0.16,
+      "knock": 70
+    }
+  },
+  "block": {
+    "moveFactor": 0.3,
+    "parryWindow": 0.16,
+    "pushback": 110,
+    "chip": 0
+  },
+  "hitstop": {
+    "light": 0.045,
+    "heavy": 0.1,
+    "hurt": 0.12,
+    "parry": 0.14
+  },
+  "hurtKnockback": 190
 }

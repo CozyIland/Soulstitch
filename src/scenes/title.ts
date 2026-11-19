@@ -43,7 +43,7 @@ export const titleScene: Scene = {
       txt(i ? 'Testmodus' : 'Spielen', r.x + r.w / 2, r.y + 6, '#fff', 'center', 14, true);
     }
     txt(touch.mode ? TEXTS.controls.touch : TEXTS.controls.keyboard, W / 2, 300, '#b0a090', 'center', 12);
-    if (prof.save.best) txt('Rekord: ' + prof.save.best + ' Bosse', W / 2, 322, '#ffd040', 'center', 13, true);
+    if (prof.save.best) txt('Rekord: ' + prof.save.best + ' Kämpfe in einem Lauf', W / 2, 322, '#ffd040', 'center', 13, true);
   },
 };
 

@@ -1,6 +1,6 @@
 // Tastatur, Maus und Touch.
-// Touch im Kampf: links ziehen = laufen (nach oben = springen), rechts tippen = dorthin schießen,
-// Knöpfe rechts unten für Sprung und Ausweichen.
+// Touch im Kampf: links ziehen = laufen (nach oben = springen), rechts tippen = angreifen
+// (gegen alte Bosse: dorthin schießen), Knöpfe rechts unten für die aktiven Fähigkeiten.
 import { W, H } from './constants.ts';
 import { clamp } from './util.ts';
 import { cv } from './canvas.ts';
@@ -10,17 +10,19 @@ import { G } from './state.ts';
 
 export const keys = new Set<string>();
 export const pressed = new Set<string>(); // nur in diesem Frame neu gedrückt
-export const mouse = { x: W / 2, y: H / 2, down: false, click: false };
+export const mouse = { x: W / 2, y: H / 2, down: false, click: false, rdown: false };
 
 export interface Joy { id: number; ox: number; oy: number; dx: number; up: boolean }
+/** Touch-Knöpfe im Kampf; welche es gibt, legt das Kampfmodul je nach aktiven Fähigkeiten fest. */
+export interface TouchButton { id: 'jump' | 'dodge' | 'block'; x: number; y: number; r: number; label: string }
 export const touch = {
   mode: false,
   joy: null as Joy | null,
-  aim: null as { id: number; x: number; y: number } | null,
+  aim: null as { id: number; x: number; y: number } | null, // rechter Daumen: Angriff / Ziel
   jumpId: null as number | null,
+  blockId: null as number | null,
+  buttons: [] as TouchButton[],
 };
-export const JB = { x: 598, y: 318, r: 28 }; // Sprung-Knopf
-export const DB = { x: 536, y: 330, r: 22 }; // Dash-Knopf
 
 export const K = (...c: string[]): boolean => c.some((k) => keys.has(k));
 export const KP = (...c: string[]): boolean => c.some((k) => pressed.has(k));
@@ -51,15 +53,16 @@ export function initInput(): void {
     initAudio();
   });
   addEventListener('keyup', (e) => keys.delete(e.code));
-  addEventListener('blur', () => { keys.clear(); mouse.down = false; });
+  addEventListener('blur', () => { keys.clear(); mouse.down = false; mouse.rdown = false; });
 
   const mpos = (e: MouseEvent) => { const q = toGame(e.clientX, e.clientY); mouse.x = q.x; mouse.y = q.y; };
   cv.addEventListener('mousemove', mpos);
   cv.addEventListener('mousedown', (e) => {
-    mpos(e); mouse.down = true; mouse.click = true;
+    mpos(e);
+    if (e.button === 2) mouse.rdown = true; else { mouse.down = true; mouse.click = true; }
     cv.focus(); initAudio(); e.preventDefault();
   });
-  addEventListener('mouseup', () => (mouse.down = false));
+  addEventListener('mouseup', (e) => { if (e.button === 2) mouse.rdown = false; else mouse.down = false; });
   cv.addEventListener('contextmenu', (e) => e.preventDefault());
 
   cv.addEventListener('touchstart', (e) => {
@@ -68,10 +71,12 @@ export function initInput(): void {
       const q = toGame(t.clientX, t.clientY);
       mouse.x = q.x; mouse.y = q.y; mouse.click = true;
       if (G.scene !== 'fight') continue;
-      if (q.x < W / 2) { if (!touch.joy) touch.joy = { id: t.identifier, ox: q.x, oy: q.y, dx: 0, up: false }; }
-      else if (Math.hypot(q.x - DB.x, q.y - DB.y) < DB.r + 8) pressed.add('ShiftLeft');
-      else if (Math.hypot(q.x - JB.x, q.y - JB.y) < JB.r + 8) { touch.jumpId = t.identifier; jumpKey(); }
-      else if (!touch.aim) touch.aim = { id: t.identifier, x: q.x, y: q.y };
+      const btn = touch.buttons.find((b) => Math.hypot(q.x - b.x, q.y - b.y) < b.r + 8);
+      if (btn?.id === 'dodge') pressed.add('ShiftLeft');
+      else if (btn?.id === 'jump') { touch.jumpId = t.identifier; jumpKey(); }
+      else if (btn?.id === 'block') { touch.blockId = t.identifier; keys.add('KeyK'); }
+      else if (q.x < W / 2) { if (!touch.joy) touch.joy = { id: t.identifier, ox: q.x, oy: q.y, dx: 0, up: false }; }
+      else if (!touch.aim) { touch.aim = { id: t.identifier, x: q.x, y: q.y }; pressed.add('KeyJ'); } // Angriff
     }
   }, { passive: false });
 
@@ -97,6 +102,7 @@ export function initInput(): void {
       if (touch.joy && t.identifier === touch.joy.id) touch.joy = null;
       if (touch.aim && t.identifier === touch.aim.id) touch.aim = null;
       if (t.identifier === touch.jumpId) touch.jumpId = null;
+      if (t.identifier === touch.blockId) { touch.blockId = null; keys.delete('KeyK'); }
     }
     jumpKey();
   };

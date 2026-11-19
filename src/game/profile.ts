@@ -4,13 +4,17 @@ import { loadSave, writeSave, SAVE_VERSION } from './save.ts';
 import type { SaveData } from './save.ts';
 import { computeStats, maxOwn } from './stats.ts';
 import type { Stats } from './stats.ts';
+import { ABILITY_IDS } from './abilities.ts';
+import type { AbilityId } from './abilities.ts';
 
 const storage: Storage | null = (() => { try { return window.localStorage; } catch { return null; } })();
 
 export const prof = {
   save: loadSave(storage) as SaveData,
   test: false,  // Testmodus: alle Teile frei, unendlich Knochen, nichts wird gespeichert
-  testBoss: 1,  // Start-Boss im Testmodus
+  testFight: 0, // Start-Kampf im Testmodus (Index in TEST_FIGHTS)
+  /** Aktive Fähigkeiten. Phase 1: alle; ab Phase 2 bestimmt sie der Körper. Im Debug-Panel umschaltbar. */
+  abilities: [...ABILITY_IDS] as AbilityId[],
 };
 
 export function persist(): void {

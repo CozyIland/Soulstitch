@@ -9,12 +9,12 @@ import { txt, rr } from '../render/draw.ts';
 import { drawBody, LEG } from '../render/body.ts';
 import { bg, shaftEmbers } from '../render/backgrounds.ts';
 import { soulFlame, soulTrail, updFx, drawFx } from '../render/soul.ts';
-import { PARTS, PART, SLOTS, BOSSES, BALANCE } from '../data/index.ts';
+import { PARTS, PART, SLOTS, BALANCE, RUN_FIGHTS, fightName } from '../data/index.ts';
 import { prof, persist, stats, bonesTxt } from '../game/profile.ts';
 import { canEquip, owned, reach } from '../game/stats.ts';
 import { go } from '../game/scenes.ts';
 import type { Scene } from '../game/scenes.ts';
-import { startRun } from '../game/run.ts';
+import { startRun, fightsFrom, TEST_FIGHTS } from '../game/run.ts';
 
 // ---------- Leichenhaufen: Körperteile tauschen und kaufen ----------
 let pSel=0,pCol=0,oSel=0,pileMsg='',pileBuy=-1;
@@ -46,7 +46,7 @@ function drawPileUI(al:number){
   txt(pileMsg,14,40,'#d0c8b0','left',12);
   const s=stats();
   rr(ctx,8,300,214,52,6);ctx.fillStyle='rgba(16,10,12,.8)';ctx.fill();
-  txt('Herzen '+s.hp+'   Tempo '+pct(s.speed/BALANCE.player.speed)+'   Feuer '+pct(s.fr),16,307,'#8fe6ff','left',11,true);
+  txt('Herzen '+s.hp+'   Tempo '+pct(s.speed/BALANCE.player.speed)+'   Schlag '+pct(s.fr),16,307,'#8fe6ff','left',11,true);
   txt('Schaden '+pct(s.dmg)+'   Reichweite '+pct(reach(s)),16,323,'#8fe6ff','left',11,true);
   txt('Dash '+pct(BALANCE.player.dashCooldown/s.dcd)+'   Sprung '+pct(s.jmp)+(s.dbl?' ×2':''),16,339,'#8fe6ff','left',11,true);
   // Plätze
@@ -74,7 +74,7 @@ function drawPileUI(al:number){
   rr(ctx,GOB.x,GOB.y,GOB.w,GOB.h,8);ctx.fillStyle=pSel===7?'#2f7f9c':(G.time*2|0)%2?'#24627a':'#1d5266';ctx.fill();
   ctx.strokeStyle=pSel===7?'#fff':OUT;ctx.lineWidth=1.6;ctx.stroke();
   txt('In die Arena',GOB.x+GOB.w/2,GOB.y+5,'#fff','center',15,true);
-  txt(prof.test?'Boss '+prof.testBoss+' · '+BOSSES[prof.testBoss-1].name:'Neuer Lauf ab Boss 1 · '+BOSSES[0].name,GOB.x+GOB.w/2,GOB.y+25,'#d8f4ff','center',prof.test?9.5:10.5);
+  txt(prof.test?testLabel():'Neuer Lauf · '+RUN_FIGHTS.length+' Kämpfe',GOB.x+GOB.w/2,GOB.y+25,'#d8f4ff','center',prof.test?9.5:10.5);
   if(prof.test){txt('‹',GOB.x+14,GOB.y+8,'#ffd878','center',24,true);txt('›',GOB.x+GOB.w-14,GOB.y+8,'#ffd878','center',24,true)}
   if(!touch.mode)txt('W/S · A/D · Enter',232,284,'#6e625c','left',10);
   ctx.globalAlpha=1;
@@ -85,7 +85,7 @@ function updPile(){
     if(KP('KeyS','ArrowDown')){pSel=(pSel+1)%8;syncOpt();beep(300,.03)}
     if(pSel<7&&KP('KeyD','ArrowRight','Enter','NumpadEnter','Space')){pCol=1;syncOpt();beep(360,.03)}
     else if(pSel===7&&ok())go('possess');
-    if(pSel===7&&prof.test){const d=(KP('KeyD','ArrowRight')?1:0)-(KP('KeyA','ArrowLeft')?1:0);if(d){const n=BOSSES.length;prof.testBoss=(prof.testBoss+d+n-1)%n+1;beep(300,.03)}}
+    if(pSel===7&&prof.test){const d=(KP('KeyD','ArrowRight')?1:0)-(KP('KeyA','ArrowLeft')?1:0);if(d)stepTest(d)}
   }else{
     const n=PARTS[SLOTS[pSel].t].length;
     if(KP('KeyW','ArrowUp')){oSel=(oSel+n-1)%n;pileBuy=-1;beep(300,.03)}
@@ -97,11 +97,15 @@ function updPile(){
     for(let i=0;i<7;i++)if(inR(ROW(i),x,y)){if(pSel!==i){pSel=i;syncOpt();beep(300,.03)}pCol=1}
     if(pSel<7)for(let i=0;i<PARTS[SLOTS[pSel].t].length;i++)if(inR(CARD(i),x,y)){pCol=1;actOpt(i)}
     if(inR(GOB,x,y)){
-      if(prof.test&&x<GOB.x+36){prof.testBoss=(prof.testBoss+BOSSES.length-2)%BOSSES.length+1;beep(300,.03)}
-      else if(prof.test&&x>GOB.x+GOB.w-36){prof.testBoss=prof.testBoss%BOSSES.length+1;beep(300,.03)}
+      if(prof.test&&x<GOB.x+36)stepTest(-1)
+      else if(prof.test&&x>GOB.x+GOB.w-36)stepTest(1)
       else go('possess')}
   }
 }
+
+// Testmodus: Start-Kampf wählen (Gladiatoren, dann die alten Schuss-Bosse als Magie-Vorschau)
+function stepTest(d:number){const n=TEST_FIGHTS.length;prof.testFight=(prof.testFight+d+n)%n;beep(300,.03)}
+function testLabel(){const f=TEST_FIGHTS[prof.testFight];return (f.kind==='boss'?'Magie · Boss '+f.n+' · ':'Kampf '+(prof.testFight+1)+' · ')+fightName(f)}
 
 // Nach dem Tod sinkt die Seele durch den Schacht zum Leichenhaufen und sucht sich dort einen Körper aus
 const SOUL={x:180,y:180},UI=2.4;
@@ -132,7 +136,7 @@ function updPossess(dt){
   if(!posHit&&posT>=.75){posHit=true;const c=chestPos();
     for(let i=0;i<30;i++){const a=rnd(TAU),v=rnd(40,160);G.fx.push({x:c.x,y:c.y,vx:Math.cos(a)*v,vy:Math.sin(a)*v,life:rnd(.3,.7),col:i%2?'#58b8ff':'#e0ffff',r:rnd(1.5,3)})}
     beep(523,.12);setTimeout(()=>beep(784,.18),90);setTimeout(()=>beep(1046,.3,'triangle',.05),180)}
-  if(posT>=1.7){G.fx.length=0;startRun(prof.test?prof.testBoss:1)}
+  if(posT>=1.7){G.fx.length=0;startRun(prof.test?fightsFrom(TEST_FIGHTS[prof.testFight]):RUN_FIGHTS)}
 }
 function drawPossess(){
   const t=posT,c=chestPos();

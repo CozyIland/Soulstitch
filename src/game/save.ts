@@ -1,7 +1,7 @@
 // Speicherstand mit Versionsnummer. Ältere Stände werden beim Laden umgewandelt,
 // unbekannte oder kaputte Werte durch sichere Standardwerte ersetzt.
 // Reine Logik ohne Browser: der Speicher (localStorage) wird hereingereicht.
-import { PARTS, PART, SLOTS, BOSSES } from '../data/index.ts';
+import { PARTS, PART, SLOTS } from '../data/index.ts';
 import type { Equip } from '../data/index.ts';
 import { canEquip, maxOwn } from './stats.ts';
 
@@ -40,7 +40,7 @@ const isObj = (v: unknown): v is Record<string, unknown> => typeof v === 'object
 export function sanitize(raw: unknown): SaveData {
   const s = defaultSave();
   if (!isObj(raw)) return s;
-  s.best = int(raw.best, 0, BOSSES.length);
+  s.best = int(raw.best, 0, 999);
   s.bones = int(raw.bones, 0, Number.MAX_SAFE_INTEGER);
   if (isObj(raw.own)) {
     for (const id in PART) {
@@ -73,7 +73,7 @@ export function loadSave(store: Store | null): SaveData {
     const v2 = parse(store.getItem(LEGACY_KEYS.v2));
     if (isObj(v2)) return sanitize(v2);
     const v1 = parse(store.getItem(LEGACY_KEYS.v1));
-    if (isObj(v1)) return { ...defaultSave(), best: int(v1.best, 0, BOSSES.length) };
+    if (isObj(v1)) return { ...defaultSave(), best: int(v1.best, 0, 999) };
   } catch { /* Speicher gesperrt: mit leerem Stand weiterspielen */ }
   return defaultSave();
 }

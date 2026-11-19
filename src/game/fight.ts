@@ -1,88 +1,188 @@
+// Ein Kampf: Intro-Banner → Kampf → Sieg-Banner oder Todessequenz.
+// Gegner ist ein Gladiator (Nahkampf) oder – nur im Testmodus – einer der alten Schuss-Bosse
+// als Vorschau auf die Magie in Akt II.
 import { ctx } from '../core/canvas.ts';
 import { W, H, GY, AL, AR, SP, OUT } from '../core/constants.ts';
 import { TAU, rnd, clamp } from '../core/util.ts';
 import { G } from '../core/state.ts';
 import { beep } from '../core/audio.ts';
-import { K, KP, mouse, touch, JB, DB } from '../core/input.ts';
+import { touch } from '../core/input.ts';
+import type { TouchButton } from '../core/input.ts';
 import { txt, circ, poly, rr } from '../render/draw.ts';
 import { drawBody } from '../render/body.ts';
 import { drawShape } from '../render/shapes.ts';
+import { drawGladiator } from '../render/gladiator.ts';
 import { bg, drawStage, shadow } from '../render/backgrounds.ts';
 import { soulFlame } from '../render/soul.ts';
-import { BOSSES, BALANCE, TEXTS, fmt } from '../data/index.ts';
+import { BOSSES, BALANCE, TEXTS, GLADIATOR, GLAD_ATTACKS, fmt } from '../data/index.ts';
+import type { FightRef, GladAttackId } from '../data/index.ts';
 import { GROUND_MOVES } from './constants.ts';
 import { bossReward, bossMaxHp } from './stats.ts';
 import type { Stats } from './stats.ts';
-import { fightWon, nextFight, endRun } from './run.ts';
+import { R, fightWon, nextFight, endRun } from './run.ts';
 import type { Scene } from './scenes.ts';
 import { prof, persist, stats, bonesTxt } from './profile.ts';
-import { world, eb, pb, hz, shot, burst, hitP, aim, clearArena } from './world.ts';
+import { world, eb, pb, hz, shot, burst, hitP, aim, clearArena, overlap, playerBox } from './world.ts';
+import type { Foe } from './world.ts';
 import { A } from './attacks.ts';
+import { resolveHit } from './abilities.ts';
+import type { IncomingHit, HitResult } from './abilities.ts';
+import { newPlayer, readIntent, updatePlayer, drawPlayer } from './player.ts';
+import { createGlad, updateGlad, gladAttackBox, gladHurtbox, hurtGlad, gladDeflected, forceAttack, attackDef } from './gladiator.ts';
+import type { Glad, GladEvent } from './gladiator.ts';
 
-// Ein Kampf gegen einen Boss: Intro-Banner → Kampf → Sieg-Banner oder Todessequenz.
-type Phase='intro'|'play'|'clear'|'dead';
-let phase:Phase='intro',pt=0,bossN=1,msg='',deadT=0,st:Stats=null;
+type Phase = 'intro' | 'play' | 'clear' | 'dead';
+let phase: Phase = 'intro', pt = 0, msg = '', deadT = 0, st: Stats = null;
+let magic = false;         // alter Schuss-Boss: Spieler schießt statt zu schlagen
+let glad: Glad | null = null;
+/** kurze Schriftzüge über dem Geschehen (Parade, Schild …) */
+const popups: { text: string; x: number; y: number; t: number; col: string }[] = [];
+const popup = (text: string, x: number, y: number, col = '#fff') => popups.push({ text, x, y, t: 0, col });
 
-function startFight(n:number){
-  bossN=n;const d=BOSSES[n-1];st=stats();
-  world.p={x:140,y:GY,vy:0,gnd:true,hp:st.hp,inv:0,iv:0,cd:0,dcd:0,dashT:0,jb:0,mf:1,f:1,run:0,aim:0,jumps:0,hits:0,horned:true,hurt:false};
-  const vr=BALANCE.boss.sizes[d.size-1],gnd=GROUND_MOVES.includes(d.move);
-  world.b={def:d,n,hp:bossMaxHp(n),max:bossMaxHp(n),vr,r:vr*.68,gnd,x:d.move==='center'?W/2:gnd?500:460,y:gnd?GY-vr:d.move==='strafe'?85:150,f:-1,
-     inv:0,atk:1,ai:0,timers:[],state:'move',st:0,dir:rnd()<.5?-1:1,oa:0,
-     bvx:d.speed*SP*(rnd()<.5?-1:1)*.75,bvy:d.speed*SP*.6};
-  clearArena();phase='intro';pt=1.7;msg='';deadT=0;
-  beep(196,.15);setTimeout(()=>beep(147,.3),150);
+/** Laufende Nummer des Kampfes im Run (für Anzeigen) */
+const fightNo = (): number => (R.run ? R.run.i + 1 : 1);
+const fightCount = (): number => (R.run ? R.run.fights.length : 1);
+
+/** Touch-Knöpfe für die aktiven Fähigkeiten */
+const BUTTONS: Record<TouchButton['id'], Omit<TouchButton, 'id'>> = {
+  jump: { x: 598, y: 318, r: 28, label: 'SPRUNG' },
+  dodge: { x: 534, y: 330, r: 22, label: 'DASH' },
+  block: { x: 600, y: 250, r: 24, label: 'BLOCK' },
+};
+
+// ---------- Gegner als Foe: einheitlich für HUD, Zielen und Nahkampftreffer ----------
+function bossFoe(): Foe {
+  return {
+    get name() { return world.b.def.name; }, get hp() { return world.b.hp; }, get max() { return world.b.max; },
+    get accent() { return world.b.def.accent; }, get x() { return world.b.x; }, get y() { return world.b.y; },
+    get hidden() { return world.b.state === 'hidden'; },
+    box() { const b = world.b; return { x: b.x - b.r, y: b.y - b.r, w: b.r * 2, h: b.r * 2 }; },
+    hurt: (dmg) => hurtBoss(dmg),
+  };
 }
-function hurtPlayer(){
-  const p=world.p;
-  if(G.debug.god)return;
-  if(phase!=='play'||p.inv>0||p.iv>0)return;
-  p.hp--;G.shake=8;burst(p.x,p.y-17,16,'#ff3838');beep(120,.3,'sawtooth',.08,-80);
-  p.hurt=true;
-  if(p.hp<=0){phase='dead';deadT=0;p.dieY=p.y;p.inv=0;p.dashT=0;persist();burst(p.x,p.y-17,14,'#ddd4ba',120)}else p.inv=BALANCE.player.hitInvulnerability+st.inv;
+function gladFoe(g: Glad): Foe {
+  return {
+    name: g.def.name, get hp() { return g.hp; }, max: g.max, accent: g.def.accent,
+    get x() { return g.x; }, y: GY - 34, hidden: false,
+    box: () => gladHurtbox(g),
+    hurt(dmg, dir, knock, heavy) {
+      if (phase !== 'play') return false;
+      const r = hurtGlad(g, dmg, dir, knock, heavy);
+      if (r.ev) gladSound(r.ev);
+      if (r.ok) { burst(g.x, GY - 36, 8, g.def.accent); if (g.hp <= 0) winFight(); }
+      return r.ok;
+    },
+  };
 }
-function hurtBoss(dmg){
-  const p=world.p,b=world.b;
-  if(b.state==='hidden'||b.hp<=0)return false;
-  b.hp-=dmg;b.inv=.12;G.shake=Math.max(G.shake,3);burst(b.x,b.y,8,b.def.accent);beep(520,.06,'square',.05,200);
-  if(st.leech&&++p.hits%st.leech===0&&p.hp<st.hp){p.hp++;burst(p.x,p.y-17,12,'#40e0ff');beep(880,.12,'sine',.06,300)}
-  if(b.hp<=.001){
-    b.hp=0;b.timers.length=0;eb.length=0;hz.length=0;phase='clear';pt=2.4;burst(b.x,b.y,60,b.def.color,240);burst(b.x,b.y,30,b.def.accent,160);G.shake=12;
-    beep(262,.1);setTimeout(()=>beep(330,.1),100);setTimeout(()=>beep(392,.25),200);
-    const gain=bossReward(b.n,p.hurt);prof.save.bones+=gain;prof.save.best=Math.max(prof.save.best,b.n);persist();fightWon(gain);
-    msg=fmt(p.hurt?TEXTS.fight.reward:TEXTS.fight.rewardNoHit,{gain,bonus:BALANCE.rewards.noHitBonus});
+
+function startFight(ref: FightRef): void {
+  st = stats();
+  world.p = newPlayer(st);
+  clearArena(); popups.length = 0;
+  phase = 'intro'; pt = 1.7; msg = ''; deadT = 0; G.hitstop = 0;
+  if (ref.kind === 'boss') {
+    magic = true; glad = null;
+    const n = ref.n, d = BOSSES[n - 1];
+    const vr = BALANCE.boss.sizes[d.size - 1], gnd = GROUND_MOVES.includes(d.move);
+    world.b = { def: d, n, hp: bossMaxHp(n), max: bossMaxHp(n), vr, r: vr * .68, gnd,
+      x: d.move === 'center' ? W / 2 : gnd ? 500 : 460, y: gnd ? GY - vr : d.move === 'strafe' ? 85 : 150, f: -1,
+      inv: 0, atk: 1, ai: 0, timers: [], state: 'move', st: 0, dir: rnd() < .5 ? -1 : 1, oa: 0,
+      bvx: d.speed * SP * (rnd() < .5 ? -1 : 1) * .75, bvy: d.speed * SP * .6 };
+    world.foe = bossFoe();
+  } else {
+    magic = false; world.b = null;
+    glad = createGlad(GLADIATOR[ref.id]);
+    world.foe = gladFoe(glad);
   }
+  beep(196, .15); setTimeout(() => beep(147, .3), 150);
+}
+
+/** Ein Treffer auf die Spielfigur: Ausweichen, Parade, Block oder Schaden. src = Gladiator, wenn er der Angreifer ist. */
+function hurtPlayer(hit: IncomingHit, fromGlad = false): HitResult {
+  const p = world.p;
+  if (G.debug.god || phase !== 'play' || p.inv > 0) return 'evade';
+  const r = resolveHit(p, hit, prof.abilities);
+  if (r === 'evade') return r;
+  if (r === 'parry') {
+    G.hitstop = BALANCE.hitstop.parry; G.shake = Math.max(G.shake, 5);
+    burst(p.x + p.f * 16, p.y - 24, 18, '#ffffff', 170); beep(1320, .12, 'square', .06, -300); beep(660, .2, 'triangle', .05);
+    if (fromGlad && glad) gladDeflected(glad, true);
+    popup('PARADE!', p.x + p.f * 10, p.y - 52, '#e8fbff');
+    return r;
+  }
+  if (r === 'block') {
+    G.hitstop = BALANCE.hitstop.light; p.vx = -p.f * BALANCE.block.pushback;
+    burst(p.x + p.f * 14, p.y - 24, 10, '#9fe8ff', 120); beep(980, .07, 'square', .05, -400);
+    if (fromGlad && glad) gladDeflected(glad, false);
+    return r;
+  }
+  damagePlayer(Math.sign(p.x - hit.x) || -p.f);
+  return r;
+}
+
+function damagePlayer(dir: number): void {
+  const p = world.p;
+  p.hp--; G.shake = 8; G.hitstop = BALANCE.hitstop.hurt;
+  burst(p.x, p.y - 17, 16, '#ff3838'); beep(120, .3, 'sawtooth', .08, -80);
+  p.hurt = true; p.atk = null; p.blocking = false;
+  p.vx = dir * BALANCE.hurtKnockback;
+  if (p.hp <= 0) { phase = 'dead'; deadT = 0; p.dieY = p.y; p.inv = 0; p.dashT = 0; persist(); burst(p.x, p.y - 17, 14, '#ddd4ba', 120); }
+  else p.inv = BALANCE.player.hitInvulnerability + st.inv;
+}
+
+function hurtBoss(dmg: number): boolean {
+  const b = world.b;
+  if (b.state === 'hidden' || b.hp <= 0) return false;
+  b.hp -= dmg; b.inv = .12; G.shake = Math.max(G.shake, 3); burst(b.x, b.y, 8, b.def.accent); beep(520, .06, 'square', .05, 200);
+  if (b.hp <= .001) { b.hp = 0; b.timers.length = 0; winFight(); }
   return true;
 }
-function updPlayer(dt){
-  const p=world.p,b=world.b;
-  let mx=(K('KeyD','ArrowRight')?1:0)-(K('KeyA','ArrowLeft')?1:0);
-  const rage=st.rage&&p.hp===1,spd=st.speed*(rage?1.4:1);
-  if(touch.joy&&Math.abs(touch.joy.dx)>.25)mx=Math.sign(touch.joy.dx);
-  p.inv-=dt;p.iv-=dt;p.cd-=dt;p.dcd-=dt;p.jb-=dt;
-  if(KP('Space','KeyW','ArrowUp'))p.jb=.12;
-  const hold=K('Space','KeyW','ArrowUp');
-  if(p.dashT>0){p.dashT-=dt;p.x+=p.ddx*460*dt;p.vy=0;
-    if(st.horn&&!p.horned&&b.state!=='hidden'&&Math.hypot(p.x-b.x,p.y-17-b.y)<b.r+10){p.horned=true;hurtBoss(3);beep(160,.15,'sawtooth',.07)}
-    G.fx.push({x:p.x,y:p.y-17+rnd(-10,10),vx:0,vy:0,life:.22,col:'#55ffff',r:3})}
-  else{
-    p.x+=mx*spd*dt;if(mx){p.run+=dt*spd*.085;p.mf=mx}else p.run=0;
-    if(KP('ShiftLeft','ShiftRight','KeyK','KeyL')&&p.dcd<=0){p.dashT=.22;p.iv=.32;p.dcd=st.dcd;p.horned=false;p.ddx=mx||p.mf;beep(700,.08,'square',.04,400)}
-    if(p.jb>0&&(p.gnd||st.dbl&&p.jumps<2)){p.vy=-BALANCE.player.jump*st.jmp;p.jumps=p.gnd?1:2;p.gnd=false;p.jb=0;beep(p.jumps>1?480:380,.07,'square',.03,260);
-      if(p.jumps>1)for(let i=0;i<6;i++)G.fx.push({x:p.x+rnd(-6,6),y:p.y,vx:rnd(-50,50),vy:rnd(10,60),life:.3,col:'#8fd08f',r:2})}
-    p.vy+=BALANCE.player.gravity*dt*(p.vy<0&&!hold?2.6:1);p.y+=p.vy*dt;
-    if(p.y>=GY){p.y=GY;p.vy=0;if(!p.gnd){p.gnd=true;p.jumps=0;for(let i=0;i<4;i++)G.fx.push({x:p.x+rnd(-6,6),y:GY,vx:rnd(-40,40),vy:rnd(-30,0),life:.25,col:'#8a6a50',r:2})}}
-  }
-  p.x=clamp(p.x,AL+8,AR-8);
-  // Touch: geschossen wird genau auf die Stelle, die rechts angetippt wird; sonst Blick in Laufrichtung
-  const a=touch.mode?(touch.aim?Math.atan2(touch.aim.y-(p.y-25),touch.aim.x-p.x):(p.mf<0?Math.PI:0)):mouse.down?Math.atan2(mouse.y-(p.y-25),mouse.x-p.x):Math.atan2(b.y-(p.y-25),b.x-p.x);
-  p.aim=a;p.f=Math.cos(a)>=0?1:-1;
-  if((mouse.down||(touch.mode&&touch.aim)||K('KeyJ','KeyX'))&&p.cd<=0&&phase==='play'){
-    for(const o of st.twin?[-.1,.1]:[0])pb.push({x:p.x+Math.cos(a)*12,y:p.y-25+Math.sin(a)*12,vx:Math.cos(a+o)*st.bs,vy:Math.sin(a+o)*st.bs,life:st.life,dmg:st.dmg,home:st.home});
-    p.cd=BALANCE.player.fireCooldown/st.fr/(rage?1.4:1);beep(st.dmg>1?180:660,.05,'square',.03,st.dmg>1?-60:-200);
+
+/** Gegner besiegt: Belohnung, Banner, danach der nächste Kampf */
+function winFight(): void {
+  const p = world.p, foe = world.foe;
+  eb.length = 0; hz.length = 0;
+  phase = 'clear'; pt = 2.4; G.shake = 12; G.hitstop = BALANCE.hitstop.heavy;
+  burst(foe.x, foe.y, 60, magic ? world.b.def.color : glad.def.body, 240); burst(foe.x, foe.y, 30, foe.accent, 160);
+  beep(262, .1); setTimeout(() => beep(330, .1), 100); setTimeout(() => beep(392, .25), 200);
+  const bonus = p.hurt ? 0 : BALANCE.rewards.noHitBonus;
+  const gain = magic ? bossReward(world.b.n, p.hurt) : glad.def.bones + bonus;
+  prof.save.bones += gain;
+  fightWon(gain);
+  if (!magic && R.run) prof.save.best = Math.max(prof.save.best, R.run.won);
+  persist();
+  msg = fmt(p.hurt ? TEXTS.fight.reward : TEXTS.fight.rewardNoHit, { gain, bonus: BALANCE.rewards.noHitBonus });
+}
+
+function gladSound(e: GladEvent): void {
+  switch (e) {
+    case 'tele': {
+      const a = attackDef(glad);
+      if (a && a.blockable) beep(560, .12, 'triangle', .05, 120); else beep(240, .22, 'sawtooth', .06, -60);
+      break;
+    }
+    case 'swing': beep(180, .12, 'sawtooth', .05, -100); break;
+    case 'charge': beep(90, .3, 'sawtooth', .07, 60); break;
+    case 'wall': G.shake = Math.max(G.shake, 6); beep(70, .25, 'sawtooth', .08); burst(glad.x + glad.f * 14, GY - 20, 12, '#c08050', 140); break;
+    case 'guard': beep(820, .08, 'square', .05, 200); popup('SCHILD', glad.x, GY - 96, '#ffd27a'); break;
+    case 'clang': beep(1400, .05, 'square', .05, -600); burst(glad.x + glad.f * 12, GY - 40, 8, '#ffd27a', 130); break;
+    case 'stagger': beep(300, .2, 'triangle', .05, -150); break;
   }
 }
-function updBoss(dt){
+
+function updGlad(dt: number): void {
+  const p = world.p;
+  for (const e of updateGlad(glad, dt, p.x)) gladSound(e);
+  const box = gladAttackBox(glad);
+  if (box && overlap(box, playerBox(p))) {
+    const a = GLAD_ATTACKS[glad.atk];
+    const r = hurtPlayer({ x: glad.x, dmg: a.dmg, blockable: a.blockable }, true);
+    if (r !== 'evade') glad.hitDone = true;
+  }
+}
+
+// ---------- alte Schuss-Bosse (unverändert aus dem Prototyp) ----------
+function updBoss(dt:number){
   const p=world.p,b=world.b;
   const d=b.def,sp=d.speed*SP,gy=GY-b.vr;b.inv-=dt;
   for(const t of b.timers.slice()){t.t-=dt;if(t.t<=0){b.timers.splice(b.timers.indexOf(t),1);t.fn()}}
@@ -118,9 +218,9 @@ function updBoss(dt){
     b.st-=dt;if(b.st<=0){b.x=b.tx;b.y=b.ty;b.state='move';burst(b.x,b.y,12,d.accent);A.ring(b,b.tn,70,rnd(TAU))}
   }
   b.x=clamp(b.x,AL+b.r,AR-b.r);b.y=Math.min(b.y,GY-b.r*.6);
-  if(b.state!=='hidden'&&hitP(b.x,b.y,b.r))hurtPlayer();
+  if(b.state!=='hidden'&&hitP(b.x,b.y,b.r))hurtPlayer({x:b.x,dmg:1,blockable:false});
 }
-function updBullets(dt){
+function updBullets(dt:number){
   const p=world.p,b=world.b;
   for(let i=eb.length-1;i>=0;i--){
     const e=eb[i];e.life-=dt;
@@ -148,7 +248,7 @@ function updBullets(dt){
       if(e.split&&e.life<=0){for(let k=0;k<e.split;k++)shot(e.x,e.y,k*TAU/e.split,72);burst(e.x,e.y,10,'#fff');beep(260,.08)}
       continue;
     }
-    if(hitP(e.x,e.y,e.r*.85))hurtPlayer();
+    if(hitP(e.x,e.y,e.r*.85))hurtPlayer({x:e.x,dmg:1,blockable:false});
   }
   for(let i=pb.length-1;i>=0;i--){
     const s=pb[i];
@@ -163,34 +263,47 @@ function updBullets(dt){
     const h=hz[i];h.t+=dt;
     if(h.k==='col'){
       if(h.t>=h.T&&!h.hit){h.hit=1;G.shake=Math.max(G.shake,3);beep(90,.15,'sawtooth',.05);burst(h.x,GY,10,'#ffb040',150)}
-      if(h.t>=h.T&&Math.abs(p.x-h.x)<h.w/2+4)hurtPlayer();
+      if(h.t>=h.T&&Math.abs(p.x-h.x)<h.w/2+4)hurtPlayer({x:h.x,dmg:1,blockable:false});
       if(h.t>=h.T+h.act)hz.splice(i,1);
     }else{
       if(h.t>h.tele){
         h.a+=h.w*dt;
         if(h.b.state!=='hidden'){const ex=p.x-h.b.x,ey=p.y-17-h.b.y,c=Math.cos(h.a),s=Math.sin(h.a);
-          if(ex*c+ey*s>0&&Math.abs(ex*s-ey*c)<11)hurtPlayer()}
+          if(ex*c+ey*s>0&&Math.abs(ex*s-ey*c)<11)hurtPlayer({x:h.b.x,dmg:1,blockable:false})}
       }
       if(h.t>h.tele+h.act)hz.splice(i,1);
     }
   }
 }
-function updFight(dt){
-  pt-=dt;
-  if(phase==='intro'){if(pt<=0)phase='play'}
-  else if(phase==='play'){updPlayer(dt);updBoss(dt);updBullets(dt)}
-  else if(phase==='dead'){deadT+=dt;updBullets(dt);if(deadT>=.6&&deadT-dt<.6){beep(260,2.2,'sine',.045,520);beep(392,2,'triangle',.02,700)}if(deadT>=2.4&&deadT-dt<2.4){beep(73,1.6,'triangle',.1);beep(110,1.2,'sine',.05,-30)}
-    if(deadT>=4.8)endRun('death',fmt(TEXTS.abyss.death,{n:bossN,name:BOSSES[bossN-1].name}))}
-  else if(phase==='clear'){updPlayer(dt);updBullets(dt);if(pt<=0)nextFight()}
-  for(let i=G.fx.length-1;i>=0;i--){const f=G.fx[i];f.x+=f.vx*dt;f.y+=f.vy*dt;f.life-=dt;if(f.life<=0)G.fx.splice(i,1)}
+
+function updFight(dt: number): void {
+  // Hitstop: ein paar Hundertstel alles anhalten, damit Treffer wuchtig wirken
+  touch.buttons = prof.abilities.map((id) => ({ id, ...BUTTONS[id] }));
+  if (G.hitstop > 0) { G.hitstop -= dt; return; }
+  const p = world.p;
+  pt -= dt;
+  if (phase === 'intro') { if (pt <= 0) phase = 'play'; }
+  else if (phase === 'play') {
+    updatePlayer(p, st, readIntent(), dt, { magic, canAct: true, active: prof.abilities });
+    if (magic) { updBoss(dt); updBullets(dt); } else updGlad(dt);
+  }
+  else if (phase === 'dead') {
+    deadT += dt; if (magic) updBullets(dt);
+    if (deadT >= .6 && deadT - dt < .6) { beep(260, 2.2, 'sine', .045, 520); beep(392, 2, 'triangle', .02, 700); }
+    if (deadT >= 2.4 && deadT - dt < 2.4) { beep(73, 1.6, 'triangle', .1); beep(110, 1.2, 'sine', .05, -30); }
+    if (deadT >= 4.8) endRun('death', fmt(TEXTS.abyss.death, { name: world.foe.name }));
+  }
+  else if (phase === 'clear') {
+    updatePlayer(p, st, readIntent(), dt, { magic, canAct: false, active: prof.abilities });
+    if (magic) updBullets(dt);
+    if (pt <= 0) nextFight();
+  }
+  for (let i = popups.length - 1; i >= 0; i--) { popups[i].t += dt; if (popups[i].t > 0.9) popups.splice(i, 1); }
+  for (let i = G.fx.length - 1; i >= 0; i--) { const f = G.fx[i]; f.x += f.vx * dt; f.y += f.vy * dt; f.life -= dt; if (f.life <= 0) G.fx.splice(i, 1); }
 }
 
-
-function drawFight(){
-  const p=world.p,b=world.b;
-  ctx.save();if(G.shake>0)ctx.translate(rnd(-G.shake,G.shake)*.6,rnd(-G.shake,G.shake)*.6);
-  drawStage();
-  const d=b.def;
+function legacyDrawWorld(): void {
+  const b=world.b,d=b.def;
   // Gefahrenzonen
   for(const h of hz){
     if(h.k==='col'){
@@ -218,12 +331,8 @@ function drawFight(){
     shadow(b.x,b.y+b.vr,b.vr*.9);
     drawShape(d.shape,b.x+ox,b.y+(b.gnd?0:Math.sin(G.time*3)*3),b.vr,b.f,d.color,d.accent,b.inv>0&&(G.time*20|0)%2);
   }
-  // Spieler
-  if(phase==='dead')deadBody();
-  else{
-    shadow(p.x,p.y,12);
-    if(!(p.inv>0&&(G.time*16|0)%2))drawBody(p.x,p.y,1.2,prof.save.eq,{f:p.f,run:p.run,air:!p.gnd,aim:p.aim,flash:p.dashT>0});
-  }
+}
+function legacyDrawShots(): void {
   // Geschosse
   ctx.lineCap='round';
   for(const s of pb){const m=Math.hypot(s.vx,s.vy),ux=s.vx/m,uy=s.vy/m,w=s.dmg>1?6:3.5;
@@ -234,31 +343,69 @@ function drawFight(){
     else{ctx.globalAlpha=.28;circ(ctx,e.x,e.y,e.r*1.9,e.col);ctx.globalAlpha=1;circ(ctx,e.x,e.y,e.r,e.col);
       ctx.strokeStyle=OUT;ctx.lineWidth=.8;ctx.stroke();circ(ctx,e.x-e.r*.2,e.y-e.r*.25,e.r*.48,'#fff')}
   }
-  ctx.globalCompositeOperation='lighter';
-  for(const f of G.fx){ctx.globalAlpha=clamp(f.life*4,0,1);circ(ctx,f.x,f.y,f.r||2,f.col)}
-  ctx.globalAlpha=1;ctx.globalCompositeOperation='source-over';
-  ctx.drawImage(bg.front,0,0,W,H);
+}
+
+function drawFight(): void {
+  const p = world.p, foe = world.foe;
+  ctx.save(); if (G.shake > 0) ctx.translate(rnd(-G.shake, G.shake) * .6, rnd(-G.shake, G.shake) * .6);
+  drawStage();
+  if (magic) legacyDrawWorld();
+  else if (phase !== 'clear') drawGladiator(glad);
+  if (phase === 'dead') deadBody();
+  else { shadow(p.x, p.y, 12); drawPlayer(p, st, magic); }
+  if (magic) legacyDrawShots();
+  ctx.globalCompositeOperation = 'lighter';
+  for (const f of G.fx) { ctx.globalAlpha = clamp(f.life * 4, 0, 1); circ(ctx, f.x, f.y, f.r || 2, f.col); }
+  ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
+  ctx.drawImage(bg.front, 0, 0, W, H);
   ctx.restore();
+  for (const u of popups) { ctx.globalAlpha = clamp(1.6 - u.t * 1.8, 0, 1); txt(u.text, u.x, u.y - u.t * 22, u.col, 'center', 14, true); }
+  ctx.globalAlpha = 1;
+
   // HUD
-  const gr=ctx.createLinearGradient(0,0,0,50);gr.addColorStop(0,'rgba(8,5,7,.85)');gr.addColorStop(1,'rgba(8,5,7,0)');ctx.fillStyle=gr;ctx.fillRect(0,0,W,50);
-  txt('BOSS '+b.n+'/'+BOSSES.length+' · '+d.name,W/2,6,'#f4ead4','center',15,true,true);
-  const pw=Math.min(15,380/b.max),x0=W/2-b.max*pw/2;
-  for(let i=0;i<b.max;i++){rr(ctx,x0+i*pw,27,pw-2,8,2);ctx.fillStyle=i<b.hp?d.accent:'#2a1c1e';ctx.fill();ctx.strokeStyle=OUT;ctx.lineWidth=1;ctx.stroke();
-    if(i<b.hp){ctx.fillStyle='rgba(255,255,255,.4)';ctx.fillRect(x0+i*pw+1,28,pw-4,2.5)}}
-  for(let i=0;i<st.hp;i++){ctx.save();ctx.translate(20+i*20,17);ctx.beginPath();ctx.moveTo(0,6);ctx.bezierCurveTo(-11,-3,-5,-10,0,-4);ctx.bezierCurveTo(5,-10,11,-3,0,6);
-    ctx.fillStyle=i<p.hp?'#ff3858':'#3a1c22';ctx.fill();ctx.strokeStyle=OUT;ctx.lineWidth=1.4;ctx.stroke();ctx.restore()}
-  rr(ctx,12,30,62,6,3);ctx.fillStyle='#182a30';ctx.fill();ctx.strokeStyle=OUT;ctx.lineWidth=1;ctx.stroke();
-  const dk=clamp(1-p.dcd/st.dcd,0,1);if(dk>.1){rr(ctx,12,30,62*dk,6,3);ctx.fillStyle=dk>=1?'#5ff':'#2a8a96';ctx.fill()}
-  txt((prof.test?'TESTMODUS':'Rekord '+prof.save.best)+'   ☠ '+bonesTxt(),W-12,40,'#b0a090','right',12);
-  if(touch.mode&&phase!=='dead'){
-    for(const[q,l]of[[JB,'SPRUNG'],[DB,'DASH']] as [typeof JB,string][]){ctx.globalAlpha=.4;circ(ctx,q.x,q.y,q.r,'#fff');ctx.globalAlpha=1;ctx.strokeStyle='rgba(255,255,255,.8)';ctx.lineWidth=2;ctx.stroke();txt(l,q.x,q.y-6,'#fff','center',10,true)}
-    if(touch.joy){ctx.globalAlpha=.3;circ(ctx,touch.joy.ox,touch.joy.oy,30,'#fff');ctx.globalAlpha=.7;circ(ctx,touch.joy.ox+touch.joy.dx*26,touch.joy.oy+(touch.joy.up?-22:0),14,touch.joy.up?'#ffd040':'#5ff');ctx.globalAlpha=1}
-    if(touch.aim){ctx.strokeStyle='rgba(255,96,80,.9)';ctx.lineWidth=2;ctx.beginPath();ctx.arc(touch.aim.x,touch.aim.y,10,0,TAU);ctx.moveTo(touch.aim.x-15,touch.aim.y);ctx.lineTo(touch.aim.x-5,touch.aim.y);ctx.moveTo(touch.aim.x+5,touch.aim.y);ctx.lineTo(touch.aim.x+15,touch.aim.y);ctx.moveTo(touch.aim.x,touch.aim.y-15);ctx.lineTo(touch.aim.x,touch.aim.y-5);ctx.moveTo(touch.aim.x,touch.aim.y+5);ctx.lineTo(touch.aim.x,touch.aim.y+15);ctx.stroke()}
-    else if(bossN===1)txt('rechts tippen: dorthin schießen',W-150,248,'rgba(255,255,255,.55)','center',11,true);
+  const gr = ctx.createLinearGradient(0, 0, 0, 50); gr.addColorStop(0, 'rgba(8,5,7,.85)'); gr.addColorStop(1, 'rgba(8,5,7,0)'); ctx.fillStyle = gr; ctx.fillRect(0, 0, W, 50);
+  const label = (magic ? 'BOSS ' + world.b.n + '/' + BOSSES.length : 'KAMPF ' + fightNo() + '/' + fightCount()) + ' · ' + foe.name;
+  txt(label, W / 2, 6, '#f4ead4', 'center', 15, true, true);
+  const pw = Math.min(15, 380 / foe.max), x0 = W / 2 - foe.max * pw / 2;
+  for (let i = 0; i < foe.max; i++) {
+    rr(ctx, x0 + i * pw, 27, pw - 2, 8, 2); ctx.fillStyle = i < foe.hp ? foe.accent : '#2a1c1e'; ctx.fill(); ctx.strokeStyle = OUT; ctx.lineWidth = 1; ctx.stroke();
+    if (i < foe.hp) { ctx.fillStyle = 'rgba(255,255,255,.4)'; ctx.fillRect(x0 + i * pw + 1, 28, pw - 4, 2.5); }
   }
-  const band=(c:string)=>{ctx.fillStyle=c;ctx.fillRect(0,138,W,74)};
-  if(phase==='intro'){band('rgba(0,0,0,.62)');txt('BOSS '+b.n,W/2,146,d.accent,'center',14,true);txt(d.name,W/2,166,'#fff','center',30,true,true)}
-  if(phase==='clear'){band('rgba(0,0,0,.62)');txt(bossN>=BOSSES.length?TEXTS.fight.clearedLast:TEXTS.fight.cleared,W/2,150,'#5ff','center',30,true,true);if(msg)txt(msg,W/2,190,'#ffd040','center',13,true)}
+  for (let i = 0; i < st.hp; i++) {
+    ctx.save(); ctx.translate(20 + i * 20, 17); ctx.beginPath(); ctx.moveTo(0, 6); ctx.bezierCurveTo(-11, -3, -5, -10, 0, -4); ctx.bezierCurveTo(5, -10, 11, -3, 0, 6);
+    ctx.fillStyle = i < p.hp ? '#ff3858' : '#3a1c22'; ctx.fill(); ctx.strokeStyle = OUT; ctx.lineWidth = 1.4; ctx.stroke(); ctx.restore();
+  }
+  if (prof.abilities.includes('dodge')) {
+    rr(ctx, 12, 30, 62, 6, 3); ctx.fillStyle = '#182a30'; ctx.fill(); ctx.strokeStyle = OUT; ctx.lineWidth = 1; ctx.stroke();
+    const dk = clamp(1 - p.dcd / st.dcd, 0, 1); if (dk > .1) { rr(ctx, 12, 30, 62 * dk, 6, 3); ctx.fillStyle = dk >= 1 ? '#5ff' : '#2a8a96'; ctx.fill(); }
+  }
+  txt((prof.test ? 'TESTMODUS' : 'Rekord ' + prof.save.best) + '   ☠ ' + bonesTxt(), W - 12, 40, '#b0a090', 'right', 12);
+  if (touch.mode && phase !== 'dead') {
+    for (const q of touch.buttons) {
+      const held = (q.id === 'block' && touch.blockId !== null) || (q.id === 'jump' && touch.jumpId !== null);
+      ctx.globalAlpha = held ? .7 : .4; circ(ctx, q.x, q.y, q.r, '#fff'); ctx.globalAlpha = 1;
+      ctx.strokeStyle = 'rgba(255,255,255,.8)'; ctx.lineWidth = 2; ctx.stroke(); txt(q.label, q.x, q.y - 6, '#fff', 'center', 10, true);
+    }
+    const joy = touch.joy;
+    if (joy) { ctx.globalAlpha = .3; circ(ctx, joy.ox, joy.oy, 30, '#fff'); ctx.globalAlpha = .7; circ(ctx, joy.ox + joy.dx * 26, joy.oy + (joy.up ? -22 : 0), 14, joy.up ? '#ffd040' : '#5ff'); ctx.globalAlpha = 1; }
+    const am = touch.aim;
+    if (am && magic) {
+      ctx.strokeStyle = 'rgba(255,96,80,.9)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(am.x, am.y, 10, 0, TAU);
+      ctx.moveTo(am.x - 15, am.y); ctx.lineTo(am.x - 5, am.y); ctx.moveTo(am.x + 5, am.y); ctx.lineTo(am.x + 15, am.y);
+      ctx.moveTo(am.x, am.y - 15); ctx.lineTo(am.x, am.y - 5); ctx.moveTo(am.x, am.y + 5); ctx.lineTo(am.x, am.y + 15); ctx.stroke();
+    } else if (!am && fightNo() === 1 && !magic) txt('rechts tippen: zuschlagen', W - 170, 96, 'rgba(255,255,255,.55)', 'center', 11, true);
+  }
+  const band = (c: string) => { ctx.fillStyle = c; ctx.fillRect(0, 138, W, 74); };
+  if (phase === 'intro') {
+    band('rgba(0,0,0,.62)');
+    txt(magic ? 'BOSS ' + world.b.n : 'KAMPF ' + fightNo(), W / 2, 146, foe.accent, 'center', 14, true);
+    txt(foe.name, W / 2, 166, '#fff', 'center', 30, true, true);
+  }
+  if (phase === 'clear') {
+    band('rgba(0,0,0,.62)');
+    txt(fightNo() >= fightCount() ? TEXTS.fight.clearedLast : TEXTS.fight.cleared, W / 2, 150, '#5ff', 'center', 30, true, true);
+    if (msg) txt(msg, W / 2, 190, '#ffd040', 'center', 13, true);
+  }
   if(phase==='dead'){
     // alles außer der Leiche versinkt im Schwarz, dann YOU DIED
     const a=clamp((deadT-.5)/1.8,0,1);ctx.fillStyle='rgba(0,0,0,'+a+')';ctx.fillRect(0,0,W,H);
@@ -271,21 +418,33 @@ function drawFight(){
       ctx.restore();ctx.globalAlpha=1;soulFlame(sx,sy,sa*.95)}
     const ta=clamp((deadT-2.4)/.9,0,1)*clamp((4.8-deadT)/.5,0,1);
     if(ta>0){ctx.globalAlpha=ta;ctx.shadowColor='#a00';ctx.shadowBlur=26;txt(TEXTS.fight.died,W/2,128+(1-ta)*6,'#c8281c','center',58,true,true);ctx.shadowBlur=0;
-      txt(fmt(TEXTS.fight.defeatedBy,{name:d.name,n:bossN}),W/2,204,'#8a7a70','center',13,false,true);ctx.globalAlpha=1}
+      txt(fmt(TEXTS.fight.defeatedBy,{name:world.foe.name,n:fightNo()}),W/2,204,'#8a7a70','center',13,false,true);ctx.globalAlpha=1}
   }
 }
 
 function deadBody(){
   const p=world.p;
   const k=clamp(deadT/.45,0,1),e=k*k,y=p.dieY+(GY-p.dieY)*e;
-  ctx.save();ctx.translate(p.x,y-3*e);ctx.rotate(-Math.PI/2*e*p.f);drawBody(0,0,1.2,prof.save.eq,{f:p.f,aim:p.aim});ctx.restore();
+  ctx.save();ctx.translate(p.x,y-3*e);ctx.rotate(-Math.PI/2*e*p.f);drawBody(0,0,1.2,prof.save.eq,{f:p.f,aim:magic?p.aim:undefined});ctx.restore();
 }
 
-export const fightScene:Scene={enter:(n)=>startFight(n as number),update:updFight,draw:drawFight};
+export const fightScene: Scene = { enter: (ref) => startFight(ref as FightRef), update: updFight, draw: drawFight };
 
 /** Für Debug und Tests */
-export const fightDebug={
-  info:()=>({phase,bossN,hp:world.b?world.b.hp:0,eb:eb.length,pb:pb.length}),
-  kill:()=>{if(phase==='play'&&world.b)hurtBoss(world.b.hp)},
-  die:()=>{if(phase!=='play')return;const p=world.p,god=G.debug.god;G.debug.god=false;p.inv=0;p.iv=0;p.hp=1;hurtPlayer();G.debug.god=god},
+export const fightDebug = {
+  info: () => ({
+    phase, n: fightNo(), name: world.foe ? world.foe.name : '', hp: world.foe ? world.foe.hp : 0,
+    php: world.p ? world.p.hp : 0, px: world.p ? world.p.x : 0, eb: eb.length, pb: pb.length,
+    glad: glad ? { state: glad.state, atk: glad.atk, x: glad.x } : null,
+  }),
+  kill: () => {
+    if (phase !== 'play') return;
+    if (glad) { glad.hp = 0; glad.state = 'dead'; winFight(); } else hurtBoss(world.b.hp);
+  },
+  die: () => { if (phase === 'play') { world.p.hp = 1; damagePlayer(-world.p.f); } },
+  /** Gladiator sofort einen Angriff ankündigen lassen */
+  attack: (id: GladAttackId) => { if (glad && phase === 'play') { forceAttack(glad, id, world.p.x); gladSound('tele'); } },
+  /** Spielfigur an eine Stelle setzen und ausrichten */
+  place: (x: number, f: number) => { if (world.p) { world.p.x = x; world.p.f = f; world.p.mf = f; } },
+  gladAt: (x: number) => { if (glad) glad.x = x; },
 };

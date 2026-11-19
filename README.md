@@ -12,11 +12,16 @@ Läuft im Browser, auf PC und Handy.
 | | PC | Handy (quer halten) |
 |---|---|---|
 | Laufen | A / D | links ziehen |
+| Schlagen (3er-Combo) | J oder linke Maustaste | rechts antippen |
+| Blocken (halten) | K, S oder rechte Maustaste | BLOCK halten |
 | Springen | W oder Leertaste | links nach oben ziehen oder SPRUNG |
-| Ausweichen | Shift oder K | DASH |
-| Schießen | Maus oder J | rechts antippen und halten |
+| Ausweichen | Shift oder L | DASH |
 
-Im Startmenü gibt es den **Testmodus**: alle Teile frei, Boss frei wählbar, Debug-Werkzeuge (🛠 unten links), nichts wird gespeichert.
+Gelb angekündigte Angriffe („!“) lassen sich blocken, rot angekündigte („!!“) nicht – dann springen oder ausweichen.
+Wer den Block kurz vor dem Treffer hebt, pariert: Der Gegner taumelt.
+
+Im Startmenü gibt es den **Testmodus**: alle Teile frei, Start-Kampf frei wählbar (auch die alten Schuss-Bosse als
+Magie-Vorschau), Debug-Werkzeuge (🛠 unten links) mit Fähigkeiten-Umschalter, nichts wird gespeichert.
 Die Debug-Werkzeuge lassen sich auch im normalen Spiel mit `?debug` hinter der Adresse einblenden.
 
 ## Entwickeln
@@ -36,10 +41,10 @@ Vor dem ersten Browser-Test einmal `npx playwright install chromium` ausführen.
 
 ```
 src/
-  data/       Inhalte als JSON: Körperteile, Bosse, Balance-Werte, Texte
+  data/       Inhalte als JSON: Körperteile, Gladiatoren, Kampf-Reihenfolge, alte Bosse, Balance-Werte, Texte
   core/       Canvas, Eingabe, Ton, Vollbild, gemeinsamer Zustand
   render/     Zeichnen: Figur, Boss-Formen, Hintergründe, Seele
-  game/       Spiellogik: Szenen, Run, Kampf, Angriffe, Werte, Speicherstand
+  game/       Spiellogik: Szenen, Run, Kampf, Spielfigur, Fähigkeiten, Gladiator, alte Bosse, Werte, Speicherstand
   scenes/     Titel, Intro, Abgrund (Körper wählen), Sieg
   debug.ts    Debug-Panel und window.__dbg für Tests
 test/unit/    Tests der Logik (node --test)

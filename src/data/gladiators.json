@@ -1,0 +1,27 @@
+{
+  "attacks": {
+    "hieb":  { "name": "Hieb",         "tele": 0.55, "act": 0.14, "rec": 0.5,  "range": 58, "dmg": 1, "blockable": true,  "low": false },
+    "feger": { "name": "Fegeschlag",   "tele": 0.6,  "act": 0.18, "rec": 0.55, "range": 66, "dmg": 1, "blockable": false, "low": true },
+    "sturm": { "name": "Sturmangriff", "tele": 0.65, "act": 0.9,  "rec": 0.7,  "range": 0,  "dmg": 1, "blockable": true,  "low": false, "speed": 330 }
+  },
+  "gladiators": [
+    {
+      "id": "rekrut", "name": "Rekrut", "hp": 14, "speed": 62, "bones": 5,
+      "pause": [0.9, 1.4], "teleScale": 1.25, "guard": 0, "chain": 0,
+      "attacks": ["hieb", "hieb", "sturm"],
+      "body": "#8a7e6a", "metal": "#8c8478", "accent": "#d8b25a"
+    },
+    {
+      "id": "veteran", "name": "Veteran", "hp": 20, "speed": 76, "bones": 8,
+      "pause": [0.65, 1.1], "teleScale": 1.0, "guard": 0.35, "chain": 0.25,
+      "attacks": ["hieb", "feger", "sturm"],
+      "body": "#7a6656", "metal": "#7c8898", "accent": "#e06040"
+    },
+    {
+      "id": "champion", "name": "Champion der Arena", "hp": 26, "speed": 92, "bones": 12,
+      "pause": [0.5, 0.9], "teleScale": 0.9, "guard": 0.5, "chain": 0.5,
+      "attacks": ["hieb", "feger", "sturm", "feger"],
+      "body": "#6e5a52", "metal": "#c8a050", "accent": "#ff4060"
+    }
+  ]
+}

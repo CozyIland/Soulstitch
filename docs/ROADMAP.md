@@ -97,13 +97,17 @@ Jede Phase endet mit etwas Spielbarem. Die Story-Arbeit läuft parallel dazu (Ab
 **Fertig, wenn** der heutige Prototyp im neuen Projekt läuft und per Link spielbar ist.
 
 ### Phase 1 – Nahkampf
-- [ ] Angriff mit Trefferzonen, Combo aus 2–3 Schlägen, Schaden und Lebenspunkte
-- [ ] **Blocken, Springen, Ausweichen** als einzelne, austauschbare Fähigkeits-Module
-- [ ] Treffer-Feedback: kurze Pause beim Treffer, Rückstoß, Aufblitzen, Sound-Platzhalter
-- [ ] Ein Gladiator mit einfacher KI und erkennbar angekündigten Angriffen
-- [ ] Touch-Steuerung für den Nahkampf
+- [x] Angriff mit Trefferzonen, Combo aus 3 Schlägen (dritter schwer, mit Rückstoß), Luftangriff, Eingabepuffer
+- [x] **Blocken, Springen, Ausweichen** als einzelne, austauschbare Fähigkeits-Module (`src/game/abilities.ts`), dazu eine Parade: Block kurz vor dem Treffer lässt den Gegner taumeln
+- [x] Treffer-Feedback: Hitstop, Rückstoß, Aufblitzen, Funken, Bildschirmwackeln, Sound-Platzhalter
+- [x] Gladiator mit KI und klar angekündigten Angriffen: Hieb (blockbar), Fegeschlag (nicht blockbar), Sturmangriff. Drei Stufen als Daten: Rekrut, Veteran, Champion (`src/data/gladiators.json`)
+- [x] Touch-Steuerung: rechts tippen = schlagen, Knöpfe für die aktiven Fähigkeiten
 
 **Fertig, wenn** ein Kampf gegen einen Gladiator mit jeder der drei Fähigkeiten Spaß macht.
+Die Tests zeigen: jede Fähigkeit allein reicht gegen zwei der drei Angriffe, der dritte lässt sich mit Abstand umgehen.
+Ob es Spaß macht, entscheidet das Spielen: Im Testmodus lassen sich die Fähigkeiten im Debug-Panel einzeln einschalten.
+
+Die alten 30 Schuss-Bosse bleiben im Testmodus als Vorschau auf die Magie (Akt II) spielbar.
 
 ### Phase 2 – Körper und Archetypen
 - [ ] Körperteil-Daten: Platz, Archetyp-Fähigkeit, Größe, Gewicht

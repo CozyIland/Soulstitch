@@ -4,6 +4,8 @@ import partsJson from './parts.json' with { type: 'json' };
 import bossesJson from './bosses.json' with { type: 'json' };
 import balanceJson from './balance.json' with { type: 'json' };
 import textsJson from './texts.json' with { type: 'json' };
+import gladJson from './gladiators.json' with { type: 'json' };
+import runJson from './run.json' with { type: 'json' };
 import type { AttackName, MoveName, ShapeName } from '../game/constants.ts';
 
 export type SlotType = 'kopf' | 'brust' | 'herz' | 'arm' | 'bein';
@@ -46,6 +48,41 @@ export const SLOTS = partsJson.slots as Slot[];
 export const BOSSES = bossesJson as unknown as BossDef[];
 export const BALANCE = balanceJson;
 export const TEXTS = textsJson;
+
+// ---------- Gladiatoren (Nahkampf-Gegner) ----------
+export type GladAttackId = 'hieb' | 'feger' | 'sturm';
+export interface GladAttack {
+  name: string;
+  tele: number;   // Ankündigung in Sekunden (wird mit teleScale des Gladiators multipliziert)
+  act: number;    // aktive Zeit, in der der Angriff trifft
+  rec: number;    // Erholung danach: hier ist der Gladiator verwundbar
+  range: number;  // Reichweite nach vorn
+  dmg: number;
+  blockable: boolean;
+  low: boolean;   // trifft nur am Boden: überspringen
+  speed?: number; // nur Sturmangriff
+}
+export interface GladiatorDef {
+  id: string; name: string; hp: number; speed: number; bones: number;
+  pause: [number, number]; // Wartezeit zwischen Angriffen (min, max)
+  teleScale: number;       // < 1 = kürzere Ankündigung
+  guard: number;           // Wahrscheinlichkeit, nach Treffern den Schild zu heben
+  chain: number;           // Wahrscheinlichkeit, direkt einen zweiten Angriff anzuhängen
+  attacks: GladAttackId[];
+  body: string; metal: string; accent: string;
+}
+export const GLAD_ATTACKS = gladJson.attacks as Record<GladAttackId, GladAttack>;
+export const GLADIATORS = gladJson.gladiators as GladiatorDef[];
+export const GLADIATOR: Record<string, GladiatorDef> = Object.fromEntries(GLADIATORS.map((g) => [g.id, g]));
+
+// ---------- Kampf-Reihenfolge eines Runs ----------
+/** Ein Kampf: ein Gladiator (Nahkampf) oder einer der alten Schuss-Bosse (Magie-Vorschau, nur im Testmodus). */
+export type FightRef = { kind: 'gladiator'; id: string } | { kind: 'boss'; n: number };
+export const RUN_FIGHTS: FightRef[] = runJson.fights.map((id) => ({ kind: 'gladiator', id }));
+
+export function fightName(f: FightRef): string {
+  return f.kind === 'gladiator' ? GLADIATOR[f.id].name : BOSSES[f.n - 1].name;
+}
 
 /** Ersetzt {platzhalter} in einem Text. */
 export function fmt(text: string, vars: Record<string, string | number>): string {
