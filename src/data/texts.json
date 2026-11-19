@@ -1,0 +1,33 @@
+{
+  "title": "SOULSTITCH",
+  "subtitle": "Boss Rush im Knochenkolosseum",
+  "intro": [
+    ["Welche Macht wohnt der Seele inne?", "Welche Rolle spielt sie bei der Formung", "von Identität und Körper?"],
+    ["Um das zu beantworten, wurden Menschen zu Göttern –", "und verfielen dem Wahnsinn.", "Imperien entstanden und fielen."],
+    ["Du warst der Sohn eines solchen Gottes.", "Jetzt bist du nur noch eine Seele", "in einem Leichenhaus unter dem Knochenkolosseum."],
+    ["30 Gegner stehen zwischen dir und deinem Vater.", "Stirbst du, nähst du dich im Leichenhaufen neu zusammen.", "Bezahlt wird mit den Knochen deiner Gegner."]
+  ],
+  "victory": {
+    "headline": "Der Vater ist gefallen",
+    "lines": ["Der Gott des Imperiums ist tot.", "Doch die Frage bleibt:", "Welche Macht wohnt der Seele inne?"]
+  },
+  "fight": {
+    "cleared": "Seele befreit",
+    "clearedLast": "Der Gott ist gefallen",
+    "died": "YOU DIED",
+    "defeatedBy": "Besiegt von {name} · Boss {n}",
+    "reward": "+{gain} Knochen",
+    "rewardNoHit": "+{gain} Knochen (ohne Treffer +{bonus})"
+  },
+  "abyss": {
+    "first": "Deine Seele braucht einen Körper. Näh dir einen zusammen.",
+    "death": "Boss {n} ({name}) hat deinen Körper zerstört. Knochen und Teile bleiben – näh dich neu zusammen.",
+    "victory": "Der Vater ist gefallen. Ein neuer Lauf beginnt bei Boss 1.",
+    "test": "Testmodus: alle Teile frei, Boss am Arena-Knopf wählen. Nichts wird gespeichert.",
+    "debug": "Debug: zurück im Abgrund."
+  },
+  "controls": {
+    "keyboard": "A/D: laufen · W oder Leertaste: springen · Shift oder K: ausweichen · Maus oder J: schießen",
+    "touch": "Links ziehen: laufen, nach oben: springen · Rechts tippen: dorthin schießen · Knopf: Dash"
+  }
+}

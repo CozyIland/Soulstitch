@@ -1,0 +1,43 @@
+{
+  "slots": [
+    {"k":"kopf","n":"Kopf","t":"kopf"},
+    {"k":"brust","n":"Brust","t":"brust"},
+    {"k":"herz","n":"Herz","t":"herz"},
+    {"k":"armL","n":"Linker Arm","t":"arm"},
+    {"k":"armR","n":"Rechter Arm","t":"arm"},
+    {"k":"beinL","n":"Linkes Bein","t":"bein"},
+    {"k":"beinR","n":"Rechtes Bein","t":"bein"}
+  ],
+  "types": {
+    "kopf": [
+      {"id":"k0","n":"Namenloser Schädel","d":"Kein Bonus.","p":0,"col":"#ddd4ba"},
+      {"id":"k1","n":"Krähenschädel","d":"Schüsse lenken leicht zum Boss.","p":25,"col":"#6a6a88","home":1},
+      {"id":"k2","n":"Hornschädel","d":"Dash durch den Boss: 3 Schaden.","p":35,"col":"#c8a070","horn":1},
+      {"id":"k3","n":"Doppelschädel","d":"Zwei Schüsse auf einmal.","p":60,"col":"#d0a4b6","twin":1}
+    ],
+    "brust": [
+      {"id":"b0","n":"Dürrer Rumpf","d":"Kein Bonus.","p":0,"col":"#b8a888"},
+      {"id":"b1","n":"Panzerrippen","d":"Nach Treffern 0,8 s länger geschützt.","p":20,"col":"#8a909c","inv":0.8},
+      {"id":"b2","n":"Soldatenbrust","d":"+1 Herz, −10 % Tempo.","p":30,"col":"#7a8e6a","hp":1,"sp":-0.1},
+      {"id":"b3","n":"Kolossrumpf","d":"+2 Herzen, −25 % Tempo.","p":55,"col":"#9a5e4c","hp":2,"sp":-0.25}
+    ],
+    "herz": [
+      {"id":"h0","n":"Stilles Herz","d":"Kein Bonus.","p":0,"col":"#b03838"},
+      {"id":"h1","n":"Gestärktes Herz","d":"+1 Herz.","p":30,"col":"#ff4868","hp":1},
+      {"id":"h2","n":"Rasendes Herz","d":"Bei 1 Herz: +40 % Feuerrate, Tempo.","p":35,"col":"#ff8a30","rage":1},
+      {"id":"h3","n":"Seelenherz","d":"Jeder 8. Treffer heilt 1 Herz.","p":50,"col":"#40e0ff","leech":8}
+    ],
+    "arm": [
+      {"id":"a0","n":"Knochenarm","d":"Kein Bonus.","p":0,"col":"#ddd4ba"},
+      {"id":"a1","n":"Speerarm","d":"+30 % Reichweite und Schusstempo.","p":15,"col":"#c8b48c","bs":0.3},
+      {"id":"a2","n":"Schnitterklaue","d":"+25 % Feuerrate, −20 % Reichweite.","p":15,"col":"#c85454","fr":0.25,"life":-0.2},
+      {"id":"a3","n":"Kanonenarm","d":"+50 % Schaden, −15 % Feuerrate.","p":25,"col":"#68728a","dmg":0.5,"fr":-0.15}
+    ],
+    "bein": [
+      {"id":"l0","n":"Läuferbein","d":"Kein Bonus.","p":0,"col":"#a89878"},
+      {"id":"l1","n":"Stelze","d":"+12 % Lauftempo.","p":15,"col":"#c09c58","sp":0.12},
+      {"id":"l2","n":"Sprungsehne","d":"Dash lädt 30 % schneller.","p":15,"col":"#70b070","dcd":0.3},
+      {"id":"l3","n":"Froschbein","d":"+12 % Sprunghöhe. Zwei: Doppelsprung.","p":25,"col":"#5a9a5a","jmp":0.12}
+    ]
+  }
+}

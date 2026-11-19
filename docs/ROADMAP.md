@@ -87,12 +87,12 @@ Die Alternative wäre Godot: ein guter visueller Editor, aber Claude kann dort n
 Jede Phase endet mit etwas Spielbarem. Die Story-Arbeit läuft parallel dazu (Abschnitt 6).
 
 ### Phase 0 – Fundament
-- [ ] Projekt umziehen: Module statt einer Datei, TypeScript, Vite, automatische Tests im Browser
-- [ ] Inhalte als Daten: Körperteile, Gegner, Run-Aufbau, Belohnungen, Dialoge
-- [ ] Spielzustände: `Abgrund` → `Run` → `Kampf` → `Run-Ende` → `Abgrund`
-- [ ] Speicherstand mit Versionsnummer, damit alte Spielstände nach Updates weiter funktionieren
-- [ ] Debug-Werkzeuge aus dem Testmodus ausbauen: Essenz geben, Kampf überspringen, unverwundbar, Akt wählen
-- [ ] Öffentlicher Link über GitHub Pages
+- [x] Projekt umziehen: Module statt einer Datei, TypeScript, Vite, automatische Tests im Browser
+- [x] Inhalte als Daten: Körperteile, Gegner, Belohnungen, Balance-Werte, Texte (`src/data/`). Run-Aufbau und Dialoge kommen mit Phase 3 und 5 dazu.
+- [x] Spielzustände: `Abgrund` → `Run` → `Kampf` → `Run-Ende` → `Abgrund`
+- [x] Speicherstand mit Versionsnummer, damit alte Spielstände nach Updates weiter funktionieren
+- [x] Debug-Werkzeuge aus dem Testmodus ausbauen: Knochen geben, Kampf gewinnen, unverwundbar, sterben, zum Abgrund. „Akt wählen“ folgt, sobald es Akte gibt.
+- [ ] Öffentlicher Link über GitHub Pages: Workflow ist fertig, Pages muss einmal in den Repo-Einstellungen eingeschaltet werden
 
 **Fertig, wenn** der heutige Prototyp im neuen Projekt läuft und per Link spielbar ist.
 

@@ -1,0 +1,22 @@
+{
+  "player": {
+    "hp": 1,
+    "speed": 150,
+    "fireCooldown": 0.45,
+    "bulletSpeed": 420,
+    "bulletLife": 0.85,
+    "dashCooldown": 0.9,
+    "jump": 400,
+    "gravity": 900,
+    "hitInvulnerability": 1.3
+  },
+  "boss": {
+    "hpPerLevel": 2,
+    "sizes": [26, 42, 62]
+  },
+  "rewards": {
+    "base": 3,
+    "perBoss": 1,
+    "noHitBonus": 2
+  }
+}

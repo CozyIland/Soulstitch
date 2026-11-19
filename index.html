@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>Soulstitch</title>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#000000">
+<style>
+html,body{margin:0;height:100%;background:#000;overflow:hidden;overscroll-behavior:none}
+body{display:flex;align-items:center;justify-content:center}
+canvas{width:min(100vw,calc(100vh*16/9));width:min(100vw,calc(100dvh*16/9));aspect-ratio:16/9;cursor:crosshair;outline:none;touch-action:none;user-select:none;-webkit-user-select:none}
+#fs{position:fixed;top:max(8px,env(safe-area-inset-top));right:max(8px,env(safe-area-inset-right));z-index:2;width:44px;height:44px;padding:0;border-radius:10px;border:1px solid rgba(255,255,255,.45);background:rgba(0,0,0,.45);color:#fff;font:22px/1 sans-serif;opacity:.75;touch-action:manipulation}
+.ov{position:fixed;inset:0;z-index:3;display:none;align-items:center;justify-content:center;padding:24px;background:rgba(0,0,0,.88);color:#efe6d0;font:17px/1.45 "Trebuchet MS","Segoe UI",sans-serif;text-align:center}
+.ov b{color:#7ff;font-size:22px}
+@media (orientation:portrait) and (pointer:coarse){#rot{display:flex}}
+#dbg{position:fixed;left:max(8px,env(safe-area-inset-left));bottom:max(8px,env(safe-area-inset-bottom));z-index:2;font:12px/1.2 "Trebuchet MS","Segoe UI",sans-serif}
+#dbg button{display:block;margin-top:4px;padding:6px 10px;border-radius:8px;border:1px solid rgba(255,176,64,.6);background:rgba(20,12,10,.85);color:#ffd8a0;font:inherit;cursor:pointer;touch-action:manipulation}
+#dbgToggle{width:36px;height:36px;padding:0!important;font-size:18px!important}
+</style>
+</head>
+<body>
+<canvas id="c" width="1280" height="720" tabindex="0"></canvas>
+<button id="fs" type="button" aria-label="Vollbild">⛶</button>
+<div id="rot" class="ov"><div><b>⟳ Handy quer halten</b><br>Soulstitch wird im Querformat gespielt.</div></div>
+<div id="fsHint" class="ov"><div><b>Kein Vollbild möglich</b><br>Dieser Browser erlaubt hier kein Vollbild.<br>Auf dem iPhone geht echtes Vollbild nur,<br>wenn das Spiel als App auf dem Home-Bildschirm liegt.<br><br>Antippen zum Schließen</div></div>
+<div id="dbg" hidden>
+  <div id="dbgPanel" hidden>
+    <button type="button" data-act="bones">+100 Knochen</button>
+    <button type="button" data-act="win">Kampf gewinnen</button>
+    <button type="button" data-act="god">Unverwundbar: aus</button>
+    <button type="button" data-act="die">Sterben</button>
+    <button type="button" data-act="abyss">Zum Abgrund</button>
+  </div>
+  <button type="button" id="dbgToggle" aria-label="Debug-Werkzeuge">🛠</button>
+</div>
+<script type="module" src="/src/main.ts"></script>
+</body>
+</html>
