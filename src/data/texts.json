@@ -37,14 +37,21 @@
     "died": "YOU DIED",
     "defeatedBy": "Besiegt von {name} · Kampf {n}",
     "reward": "+{gain} Knochen",
-    "rewardNoHit": "+{gain} Knochen (ohne Treffer +{bonus})"
+    "rewardNoHit": "+{gain} Knochen (ohne Treffer +{bonus})",
+    "missing": {
+      "block": "Kein Block: Schildarme anlegen",
+      "jump": "Kein Sprung: Froschbeine anlegen",
+      "dodge": "Kein Dash: Läuferbeine anlegen"
+    },
+    "inactive": "{name} nicht aktiv: im Leichenhaufen wählen"
   },
   "abyss": {
     "first": "Deine Seele braucht einen Körper. Näh dir einen zusammen.",
     "death": "{name} hat deinen Körper zerstört. Knochen und Teile bleiben – näh dich neu zusammen.",
     "victory": "Alle Gladiatoren besiegt. Ein neuer Lauf beginnt.",
     "test": "Testmodus: alle Teile frei, Start-Kampf am Arena-Knopf wählen. Nichts wird gespeichert.",
-    "debug": "Debug: zurück im Abgrund."
+    "debug": "Debug: zurück im Abgrund.",
+    "aborted": "Lauf abgebrochen. Knochen und Teile bleiben."
   },
   "controls": {
     "keyboard": "A/D: laufen · W/Leertaste: springen · J/Maus: schlagen · K/S/rechte Maus: blocken · Shift/L: ausweichen",
@@ -92,6 +99,11 @@
         "Menüs",
         "W/S · A/D · Enter",
         "antippen"
+      ],
+      [
+        "Pause / Menü",
+        "Escape · P",
+        "⏸ oben rechts"
       ]
     ],
     "tips": [
@@ -102,5 +114,14 @@
       "Neue Teile: einmal antippen zum Auswählen, nochmal zum Kaufen."
     ],
     "back": "Antippen oder Enter: zurück"
+  },
+  "pause": {
+    "title": "Pause",
+    "items": [
+      "Weiter",
+      "Steuerung",
+      "Lauf abbrechen",
+      "Hauptmenü"
+    ]
   }
 }

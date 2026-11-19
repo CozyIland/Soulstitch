@@ -140,6 +140,45 @@ test.describe('Steuerung', () => {
   });
 });
 
+test.describe('Menüs', () => {
+  test('Pause im Kampf: Weiter und Hauptmenü', async ({ page }) => {
+    await call(page, 'fight', 'rekrut');
+    await waitPhase(page, 'play');
+    await call(page, 'place', 120, 1); // Abstand zum Gladiator
+    await page.keyboard.press('Escape');
+    await page.waitForTimeout(150);
+    const hp = (await dbg(page)).php;
+    await page.waitForTimeout(1500); // pausiert: der Gladiator greift nicht an
+    expect((await dbg(page)).php).toBe(hp);
+    await tap(page, 320, 120 + 16);          // Weiter
+    await call(page, 'god', true);           // zwischen Weiter und erneuter Pause darf er nicht sterben
+    await page.keyboard.press('Escape');
+    await page.waitForTimeout(100);
+    await tap(page, 320, 120 + 3 * 40 + 16); // Hauptmenü
+    await waitScene(page, 'title');
+    expect((await dbg(page)).run).toBeNull();
+  });
+
+  test('Pause → Steuerung → zurück in den pausierten Kampf', async ({ page }) => {
+    await call(page, 'fight', 'rekrut');
+    await waitPhase(page, 'play');
+    await tap(page, 616, 66);                // Pause-Knopf
+    await tap(page, 320, 120 + 40 + 16);     // Steuerung
+    await waitScene(page, 'help');
+    await page.keyboard.press('Escape');
+    await waitScene(page, 'fight');
+    expect((await dbg(page)).name).toBe('Rekrut'); // derselbe Kampf läuft weiter
+  });
+
+  test('Abgrund: zurück zum Hauptmenü, Testmodus wird verlassen', async ({ page }) => {
+    await tap(page, 320, 258);  // Testmodus
+    await waitScene(page, 'abyss');
+    await tap(page, 369, 331);  // „‹ Menü“
+    await waitScene(page, 'title');
+    await expect(page.locator('#dbg')).toBeHidden();
+  });
+});
+
 test.describe('Körper und Archetypen', () => {
   /** Kampf mit einem bestimmten Körper; die Fähigkeiten bestimmt der Körper selbst (kein Debug-Zwang). */
   async function bodyDuel(page: Page, eq: Record<string, string>, attack: string, keys: [number, 'down' | 'up', string][]) {

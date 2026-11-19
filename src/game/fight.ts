@@ -3,12 +3,12 @@
 // als Vorschau auf die Magie in Akt II.
 import { ctx } from '../core/canvas.ts';
 import { W, H, GY, AL, AR, SP, OUT } from '../core/constants.ts';
-import { TAU, rnd, clamp } from '../core/util.ts';
+import { TAU, rnd, clamp, inR } from '../core/util.ts';
 import { G } from '../core/state.ts';
 import { beep } from '../core/audio.ts';
-import { touch } from '../core/input.ts';
+import { touch, mouse, KP, ok } from '../core/input.ts';
 import type { TouchButton } from '../core/input.ts';
-import { txt, circ, poly, rr } from '../render/draw.ts';
+import { txt, ptxt, circ, poly, rr } from '../render/draw.ts';
 import { drawBody } from '../render/body.ts';
 import { drawShape } from '../render/shapes.ts';
 import { drawGladiator } from '../render/gladiator.ts';
@@ -19,7 +19,8 @@ import type { FightRef, GladAttackId } from '../data/index.ts';
 import { GROUND_MOVES } from './constants.ts';
 import { bossReward, bossMaxHp } from './stats.ts';
 import type { Stats } from './stats.ts';
-import { R, fightWon, nextFight, endRun } from './run.ts';
+import { R, fightWon, nextFight, endRun, abortRun } from './run.ts';
+import { go } from './scenes.ts';
 import type { Scene } from './scenes.ts';
 import { prof, persist, stats, bonesTxt, activeAbilities } from './profile.ts';
 import { world, eb, pb, hz, shot, burst, hitP, aim, clearArena, overlap, playerBox } from './world.ts';
@@ -38,15 +39,32 @@ let active: AbilityId[] = [];
 let magic = false;         // alter Schuss-Boss: Spieler schießt statt zu schlagen
 let glad: Glad | null = null;
 /** kurze Schriftzüge über dem Geschehen (Parade, Schild …) */
-const popups: { text: string; x: number; y: number; t: number; col: string }[] = [];
-const popup = (text: string, x: number, y: number, col = '#fff') => popups.push({ text, x, y, t: 0, col });
+const popups: { text: string; x: number; y: number; t: number; col: string; dur: number }[] = [];
+const popup = (text: string, x: number, y: number, col = '#fff', dur = 0.9) => popups.push({ text, x, y, t: 0, col, dur });
+
+// ---------- Pause ----------
+let paused = false, pauseSel = 0;
+const PAUSE_BTN = { x: W - 24, y: 66, r: 13 };
+const PAUSE_ITEM = (i: number) => ({ x: W / 2 - 90, y: 120 + i * 40, w: 180, h: 32 });
+
+// ---------- Hinweis, wenn eine Fähigkeit fehlt ----------
+const AB_NAME: Record<AbilityId, string> = { block: 'Block', jump: 'Sprung', dodge: 'Dash' };
+const hintT: Record<AbilityId, number> = { block: 0, jump: 0, dodge: 0 };
+let blockWasHeld = false;
+function missingHint(id: AbilityId): void {
+  if (G.time - hintT[id] < 1.5) return;
+  hintT[id] = G.time;
+  const text = st.lvl[id] > 0 ? fmt(TEXTS.fight.inactive, { name: AB_NAME[id] }) : TEXTS.fight.missing[id];
+  popup(text, clamp(world.p.x, 120, W - 120), world.p.y - 62, '#ffb070', 1.8);
+  beep(160, .08, 'triangle', .04);
+}
 
 /** Laufende Nummer des Kampfes im Run (für Anzeigen) */
 const fightNo = (): number => (R.run ? R.run.i + 1 : 1);
 const fightCount = (): number => (R.run ? R.run.fights.length : 1);
 
 /** Touch-Knöpfe für die aktiven Fähigkeiten */
-const BUTTONS: Record<TouchButton['id'], Omit<TouchButton, 'id'>> = {
+const BUTTONS: Record<AbilityId, Omit<TouchButton, 'id'>> = {
   jump: { x: 598, y: 318, r: 28, label: 'SPRUNG' },
   dodge: { x: 534, y: 330, r: 22, label: 'DASH' },
   block: { x: 600, y: 250, r: 24, label: 'BLOCK' },
@@ -281,13 +299,21 @@ function updBullets(dt:number){
 function updFight(dt: number): void {
   // Hitstop: ein paar Hundertstel alles anhalten, damit Treffer wuchtig wirken
   active = activeAbilities(st); // Debug kann das mitten im Kampf ändern
-  touch.buttons = active.map((id) => ({ id, ...BUTTONS[id] }));
+  // alle Fähigkeits-Knöpfe zeigen; was der Körper nicht kann, ist ausgegraut
+  touch.buttons = [...(['block', 'dodge', 'jump'] as AbilityId[]).map((id) => ({ id, ...BUTTONS[id], on: active.includes(id) })), { id: 'pause' as const, ...PAUSE_BTN, label: '' }];
+  if (updPause()) return;
   if (G.hitstop > 0) { G.hitstop -= dt; return; }
   const p = world.p;
   pt -= dt;
   if (phase === 'intro') { if (pt <= 0) phase = 'play'; }
   else if (phase === 'play') {
-    updatePlayer(p, st, readIntent(), dt, { magic, canAct: true, active });
+    const intent = readIntent();
+    // Fähigkeit gedrückt, die der Körper nicht hat: kurz erklären, warum nichts passiert
+    if (intent.blockHeld && !blockWasHeld && !active.includes('block')) missingHint('block');
+    if (intent.jumpPressed && !active.includes('jump')) missingHint('jump');
+    if (intent.dodgePressed && !active.includes('dodge')) missingHint('dodge');
+    blockWasHeld = intent.blockHeld;
+    updatePlayer(p, st, intent, dt, { magic, canAct: true, active });
     if (magic) { updBoss(dt); updBullets(dt); } else updGlad(dt);
   }
   else if (phase === 'dead') {
@@ -301,7 +327,7 @@ function updFight(dt: number): void {
     if (magic) updBullets(dt);
     if (pt <= 0) nextFight();
   }
-  for (let i = popups.length - 1; i >= 0; i--) { popups[i].t += dt; if (popups[i].t > 0.9) popups.splice(i, 1); }
+  for (let i = popups.length - 1; i >= 0; i--) { popups[i].t += dt; if (popups[i].t > popups[i].dur) popups.splice(i, 1); }
   for (let i = G.fx.length - 1; i >= 0; i--) { const f = G.fx[i]; f.x += f.vx * dt; f.y += f.vy * dt; f.life -= dt; if (f.life <= 0) G.fx.splice(i, 1); }
 }
 
@@ -362,7 +388,7 @@ function drawFight(): void {
   ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
   ctx.drawImage(bg.front, 0, 0, W, H);
   ctx.restore();
-  for (const u of popups) { ctx.globalAlpha = clamp(1.6 - u.t * 1.8, 0, 1); txt(u.text, u.x, u.y - u.t * 22, u.col, 'center', 14, true); }
+  for (const u of popups) { ctx.globalAlpha = clamp((u.dur - u.t) * 2, 0, 1); txt(u.text, u.x, u.y - u.t * 14, u.col, 'center', u.dur > 1 ? 12 : 14, true); }
   ctx.globalAlpha = 1;
 
   // HUD
@@ -387,9 +413,11 @@ function drawFight(): void {
   txt((prof.test ? 'TESTMODUS' : 'Rekord ' + prof.save.best) + '   ☠ ' + bonesTxt(), W - 12, 40, '#b0a090', 'right', 12);
   if (touch.mode && phase !== 'dead') {
     for (const q of touch.buttons) {
+      if (q.id === 'pause') continue;
       const held = (q.id === 'block' && touch.blockId !== null) || (q.id === 'jump' && touch.jumpId !== null);
-      ctx.globalAlpha = held ? .7 : .4; circ(ctx, q.x, q.y, q.r, '#fff'); ctx.globalAlpha = 1;
-      ctx.strokeStyle = 'rgba(255,255,255,.8)'; ctx.lineWidth = 2; ctx.stroke(); txt(q.label, q.x, q.y - 6, '#fff', 'center', 10, true);
+      ctx.globalAlpha = !q.on ? .12 : held ? .7 : .4; circ(ctx, q.x, q.y, q.r, '#fff'); ctx.globalAlpha = 1;
+      ctx.strokeStyle = q.on ? 'rgba(255,255,255,.8)' : 'rgba(255,255,255,.25)'; ctx.lineWidth = 2; ctx.stroke();
+      txt(q.label, q.x, q.y - 6, q.on ? '#fff' : '#8a7a70', 'center', 10, true);
     }
     const joy = touch.joy;
     if (joy) { ctx.globalAlpha = .3; circ(ctx, joy.ox, joy.oy, 30, '#fff'); ctx.globalAlpha = .7; circ(ctx, joy.ox + joy.dx * 26, joy.oy + (joy.up ? -22 : 0), 14, joy.up ? '#ffd040' : '#5ff'); ctx.globalAlpha = 1; }
@@ -399,6 +427,12 @@ function drawFight(): void {
       ctx.moveTo(am.x - 15, am.y); ctx.lineTo(am.x - 5, am.y); ctx.moveTo(am.x + 5, am.y); ctx.lineTo(am.x + 15, am.y);
       ctx.moveTo(am.x, am.y - 15); ctx.lineTo(am.x, am.y - 5); ctx.moveTo(am.x, am.y + 5); ctx.lineTo(am.x, am.y + 15); ctx.stroke();
     } else if (!am && fightNo() === 1 && !magic) txt('rechts tippen: zuschlagen', W - 170, 96, 'rgba(255,255,255,.55)', 'center', 11, true);
+  }
+  // Pause-Knopf (für Maus und Touch)
+  if (phase !== 'dead') {
+    ctx.globalAlpha = .55; circ(ctx, PAUSE_BTN.x, PAUSE_BTN.y, PAUSE_BTN.r, '#140e10'); ctx.globalAlpha = 1;
+    ctx.strokeStyle = 'rgba(255,255,255,.6)'; ctx.lineWidth = 1.5; ctx.stroke();
+    ctx.fillStyle = '#f0e0b0'; ctx.fillRect(PAUSE_BTN.x - 5, PAUSE_BTN.y - 6, 3.5, 12); ctx.fillRect(PAUSE_BTN.x + 1.5, PAUSE_BTN.y - 6, 3.5, 12);
   }
   const band = (c: string) => { ctx.fillStyle = c; ctx.fillRect(0, 138, W, 74); };
   if (phase === 'intro') {
@@ -433,7 +467,48 @@ function deadBody(){
   ctx.save();ctx.translate(p.x,y-3*e);ctx.rotate(-Math.PI/2*e*p.f);drawBody(0,0,1.2,prof.save.eq,{f:p.f,aim:magic?p.aim:undefined});ctx.restore();
 }
 
-export const fightScene: Scene = { enter: (ref) => startFight(ref as FightRef), update: updFight, draw: drawFight };
+/** Pause-Menü: gibt true zurück, solange das Spiel angehalten ist. */
+function updPause(): boolean {
+  const clickPause = mouse.click && Math.hypot(mouse.x - PAUSE_BTN.x, mouse.y - PAUSE_BTN.y) < PAUSE_BTN.r + 8;
+  if (!paused) {
+    if ((KP('Escape', 'KeyP') || clickPause) && phase !== 'dead') { paused = true; pauseSel = 0; mouse.click = false; beep(330, .06); }
+    if (clickPause) mouse.click = false;
+    return paused;
+  }
+  const n = TEXTS.pause.items.length;
+  if (KP('KeyW', 'ArrowUp')) { pauseSel = (pauseSel + n - 1) % n; beep(300, .03); }
+  if (KP('KeyS', 'ArrowDown')) { pauseSel = (pauseSel + 1) % n; beep(300, .03); }
+  let pick = ok() ? pauseSel : -1;
+  if (mouse.click) for (let i = 0; i < n; i++) if (inR(PAUSE_ITEM(i), mouse.x, mouse.y)) pick = i;
+  if (KP('Escape', 'KeyP') || clickPause) pick = 0;
+  mouse.click = false;
+  if (pick === 0) { paused = false; beep(440, .05); }
+  else if (pick === 1) go('help', 'fight');
+  else if (pick === 2) { paused = false; abortRun(); go('abyss', TEXTS.abyss.aborted); }
+  else if (pick === 3) { paused = false; abortRun(); go('title'); }
+  return true;
+}
+
+function drawPause(): void {
+  ctx.fillStyle = 'rgba(8,5,7,.78)'; ctx.fillRect(0, 0, W, H);
+  txt(TEXTS.pause.title, W / 2, 62, '#f4ead4', 'center', 30, true, true);
+  TEXTS.pause.items.forEach((label, i) => {
+    const r = PAUSE_ITEM(i), sel = i === pauseSel;
+    rr(ctx, r.x, r.y, r.w, r.h, 7); ctx.fillStyle = sel ? '#24627a' : 'rgba(20,14,16,.9)'; ctx.fill();
+    ctx.strokeStyle = sel ? '#bff' : 'rgba(240,224,176,.35)'; ctx.lineWidth = sel ? 2 : 1.2; ctx.stroke();
+    txt(label, W / 2, r.y + 8, '#fff', 'center', 14, true);
+  });
+  const lv = (['block', 'jump', 'dodge'] as AbilityId[]).map((id) => (active.includes(id) ? '✓ ' : st.lvl[id] ? '○ ' : '✕ ') + AB_NAME[id]).join('    ');
+  ptxt('Dein Körper:   ' + lv, W / 2, 292, '#b0a090', 'center', 11, true);
+  ptxt('✓ aktiv   ○ vorhanden, nicht gewählt   ✕ fehlt', W / 2, 308, '#6e625c', 'center', 9.5);
+}
+
+/** Ohne Kampf-Referenz (z. B. zurück aus der Steuerung) geht der laufende Kampf einfach weiter. */
+export const fightScene: Scene = {
+  enter: (ref) => { if (ref) { paused = false; startFight(ref as FightRef); } },
+  update: updFight,
+  draw: () => { drawFight(); if (paused) drawPause(); },
+};
 
 /** Für Debug und Tests */
 export const fightDebug = {

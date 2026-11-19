@@ -29,6 +29,14 @@ export function enterTestMode(): void {
   for (const id in PART) prof.save.own[id] = maxOwn(PART[id]);
 }
 
+/** Testmodus verlassen: den echten Spielstand wieder laden */
+export function leaveTestMode(): void {
+  if (!prof.test) return;
+  prof.test = false;
+  prof.save = loadSave(storage);
+  prof.abilityOverride = null;
+}
+
 export const bonesTxt = (): string => (prof.test ? '∞' : String(prof.save.bones));
 export const stats = (): Stats => computeStats(prof.save.eq);
 

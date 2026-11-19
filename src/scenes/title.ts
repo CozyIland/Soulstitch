@@ -9,7 +9,7 @@ import { txt, rr } from '../render/draw.ts';
 import { drawBody } from '../render/body.ts';
 import { bg, drawStage } from '../render/backgrounds.ts';
 import { TEXTS } from '../data/index.ts';
-import { prof, enterTestMode } from '../game/profile.ts';
+import { prof, enterTestMode, leaveTestMode } from '../game/profile.ts';
 import { go } from '../game/scenes.ts';
 import type { Scene } from '../game/scenes.ts';
 import type { SceneName } from '../core/state.ts';
@@ -18,7 +18,7 @@ import type { SceneName } from '../core/state.ts';
 const TB = [{ x: 146, y: 244, w: 108, h: 28 }, { x: 266, y: 244, w: 108, h: 28 }, { x: 386, y: 244, w: 108, h: 28 }];
 const TB_LABEL = ['Spielen', 'Testmodus', 'Steuerung'];
 const TB_COL = ['rgba(36,98,122,.92)', 'rgba(140,72,30,.9)', 'rgba(60,46,52,.92)'];
-let titleSel = 0, introLine = 0;
+let titleSel = 0, introLine = 0, introSeen = false;
 
 function backdrop(): void {
   drawStage(); ctx.drawImage(bg.front, 0, 0, W, H);
@@ -26,13 +26,15 @@ function backdrop(): void {
 }
 
 export const titleScene: Scene = {
+  enter() { leaveTestMode(); G.debug.god = false; },
   update() {
     const d = (KP('KeyD', 'ArrowRight') ? 1 : 0) - (KP('KeyA', 'ArrowLeft') ? 1 : 0);
     if (d) { titleSel = (titleSel + d + TB.length) % TB.length; beep(300, .03); }
     let pick = ok() ? titleSel : -1;
     if (mouse.click) { const i = TB.findIndex((r) => inR(r, mouse.x, mouse.y)); pick = i >= 0 ? i : 0; }
     if (KP('KeyH')) pick = 2;
-    if (pick === 0) { beep(440, .1); go('intro'); }
+    // Intro nur beim ersten Mal; wer schon gespielt hat, geht direkt in den Abgrund
+    if (pick === 0) { beep(440, .1); if (introSeen || prof.save.best > 0 || prof.save.bones > 0) go('abyss', TEXTS.abyss.first); else go('intro'); }
     else if (pick === 1) { beep(660, .1); enterTestMode(); go('abyss', TEXTS.abyss.test); }
     else if (pick === 2) { beep(520, .06); go('help', 'title'); }
   },
@@ -58,7 +60,7 @@ export const introScene: Scene = {
   update() {
     if (!(ok() || mouse.click)) return;
     beep(440, .06);
-    if (++introLine >= TEXTS.intro.length) go('abyss', TEXTS.abyss.first);
+    if (++introLine >= TEXTS.intro.length) { introSeen = true; go('abyss', TEXTS.abyss.first); }
   },
   draw() {
     backdrop();

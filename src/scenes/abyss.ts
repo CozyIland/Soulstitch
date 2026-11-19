@@ -25,7 +25,7 @@ const ROW=(i:number)=>({x:232,y:62+i*31,w:178,h:28}),CARD=(i:number)=>({x:420,y:
 /** Fähigkeiten-Chips links unten */
 const CHIP=(i:number)=>({x:14+i*70,y:282,w:64,h:20});
 /** Knopf zur Steuerungs-Übersicht */
-const HELP={x:240,y:318,w:170,h:26};
+const HELP={x:240,y:318,w:84,h:26},MENU={x:328,y:318,w:82,h:26};
 const ARCH:Record<AbilityId,{n:string;icon:string;col:string}>={block:{n:'Block',icon:'⛨',col:'#e8c060'},jump:{n:'Sprung',icon:'⤒',col:'#7ad07a'},dodge:{n:'Dash',icon:'»',col:'#6fd8ff'}};
 /** Fähigkeit vorziehen: sie wird bevorzugt aktiv (bei Limit 1: die einzige) */
 function pickAbility(id:AbilityId){
@@ -98,7 +98,9 @@ function drawPileUI(al:number){
   if(prof.test){txt('‹',GOB.x+14,GOB.y+8,'#ffd878','center',24,true);txt('›',GOB.x+GOB.w-14,GOB.y+8,'#ffd878','center',24,true)}
   if(!touch.mode)txt('W/S · A/D · Enter · 1–3: Fähigkeit',232,284,'#6e625c','left',10);
   rr(ctx,HELP.x,HELP.y,HELP.w,HELP.h,6);ctx.fillStyle='rgba(16,10,12,.8)';ctx.fill();ctx.strokeStyle='rgba(240,224,176,.35)';ctx.lineWidth=1.2;ctx.stroke();
-  txt('?  Steuerung'+(touch.mode?'':' (H)'),HELP.x+HELP.w/2,HELP.y+7,'#f0e0b0','center',11,true);
+  txt('? Steuerung',HELP.x+HELP.w/2,HELP.y+7,'#f0e0b0','center',10.5,true);
+  rr(ctx,MENU.x,MENU.y,MENU.w,MENU.h,6);ctx.fillStyle='rgba(16,10,12,.8)';ctx.fill();ctx.strokeStyle='rgba(240,224,176,.35)';ctx.lineWidth=1.2;ctx.stroke();
+  txt('‹ Menü',MENU.x+MENU.w/2,MENU.y+7,'#f0e0b0','center',10.5,true);
   ctx.globalAlpha=1;
 }
 function updPile(){
@@ -117,6 +119,7 @@ function updPile(){
   }
   for(const [k,i] of [['Digit1',0],['Digit2',1],['Digit3',2]] as [string,number][])if(KP(k))pickAbility(ABILITY_IDS[i]);
   if(KP('KeyH')||(mouse.click&&inR(HELP,mouse.x,mouse.y))){beep(520,.06);go('help','abyss');return}
+  if(KP('KeyM')||(mouse.click&&inR(MENU,mouse.x,mouse.y))){beep(440,.06);go('title');return}
   if(mouse.click){const x=mouse.x,y=mouse.y;
     ABILITY_IDS.forEach((id,i)=>{if(inR(CHIP(i),x,y))pickAbility(id)});
     for(let i=0;i<7;i++)if(inR(ROW(i),x,y)){if(pSel!==i){pSel=i;syncOpt();beep(300,.03)}pCol=1}

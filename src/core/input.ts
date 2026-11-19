@@ -14,7 +14,7 @@ export const mouse = { x: W / 2, y: H / 2, down: false, click: false, rdown: fal
 
 export interface Joy { id: number; ox: number; oy: number; dx: number; up: boolean }
 /** Touch-Knöpfe im Kampf; welche es gibt, legt das Kampfmodul je nach aktiven Fähigkeiten fest. */
-export interface TouchButton { id: 'jump' | 'dodge' | 'block'; x: number; y: number; r: number; label: string }
+export interface TouchButton { id: 'jump' | 'dodge' | 'block' | 'pause'; x: number; y: number; r: number; label: string; on?: boolean }
 export const touch = {
   mode: false,
   joy: null as Joy | null,
@@ -72,7 +72,8 @@ export function initInput(): void {
       mouse.x = q.x; mouse.y = q.y; mouse.click = true;
       if (G.scene !== 'fight') continue;
       const btn = touch.buttons.find((b) => Math.hypot(q.x - b.x, q.y - b.y) < b.r + 8);
-      if (btn?.id === 'dodge') pressed.add('ShiftLeft');
+      if (btn?.id === 'pause') pressed.add('Escape');
+      else if (btn?.id === 'dodge') pressed.add('ShiftLeft');
       else if (btn?.id === 'jump') { touch.jumpId = t.identifier; jumpKey(); }
       else if (btn?.id === 'block') { touch.blockId = t.identifier; keys.add('KeyK'); }
       else if (q.x < W / 2) { if (!touch.joy) touch.joy = { id: t.identifier, ox: q.x, oy: q.y, dx: 0, up: false }; }
