@@ -18,6 +18,12 @@ derselben Nachrichten. Die Nachrichten 2 und 3 gibt es nur in der Sammeldatei.
 | 6 | 17:54 | Lore: warum der Gott die künstliche Seele erschafft | `2026-11-19_1754_story-kuenstliche-seele-und-seelenessenz.txt` |
 | 7 | 17:54 | Organisatorisches: Story-Zeitplan und Musik | `2026-11-19_1754-1_musik-und-zeitplan.txt` |
 
+## Weitere Quellen
+
+| Datum | Thema | Datei |
+|---|---|---|
+| 19.11. | Lore: Seelen brauchen Körper, wie der Gott trotzdem körperlos existiert, die Conduits als Kreislauf | [`../notizen/2026-11-19_lore-seelen-und-transzendenz-des-gottes.md`](../notizen/2026-11-19_lore-seelen-und-transzendenz-des-gottes.md) |
+
 ## Hörfehler der Abschrift
 
 Laut Sammeldatei:
